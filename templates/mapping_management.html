@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}컬럼 매핑 관리{% endblock %}
+
+{% block head %}
+<style>
+    .container {
+        max-width: 1200px;
+    }
+    .page-title {
+        color: #2c3e50;
+        margin-top: 20px;
+        margin-bottom: 30px;
+        font-size: 2.5em;
+        font-weight: 700;
+        text-align: center;
+    }
+    .content-section {
+        background-color: #ffffff;
+        padding: 24px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 24px;
+    }
+    .card {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+    .card-header {
+        background-color: #f8f9fa;
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .card-body {
+        padding: 1.25rem;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    #unmapped-columns-table th, #mappings-table th {
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4 max-w-screen-xl">
+    <h1 class="page-title">컬럼 매핑 관리</h1>
+
+    <div class="content-section">
+        <p class="mb-4">데이터베이스 테이블 컬럼의 변경 이력을 관리하고 레거시 코드와의 호환성을 유지합니다.</p>
+
+        <!-- 매핑되지 않은 컬럼 섹션 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <strong>매핑되지 않은 신규 컬럼</strong>
+                <button id="reload-unmapped-btn" class="btn btn-sm btn-secondary float-right">새로고침</button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="unmapped-columns-table" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>테이블명</th>
+                                <th>컬럼명</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 데이터는 JavaScript로 채워집니다. -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 매핑 관리 테이블 섹션 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <strong>매핑 관리</strong>
+                <button id="add-mapping-btn" class="btn btn-sm btn-primary float-right">신규 매핑 추가</button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="mappings-table" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>이전 테이블명</th>
+                                <th>이전 컬럼명</th>
+                                <th>새 테이블명</th>
+                                <th>새 컬럼명</th>
+                                <th>설명</th>
+                                <th>수정일</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 데이터는 JavaScript로 채워집니다. -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 매핑 추가/수정 Modal -->
+        <div class="modal fade" id="mapping-modal" tabindex="-1" role="dialog" aria-labelledby="mapping-modal-label" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="mapping-modal-label">매핑 정보</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="mapping-form">
+                            <input type="hidden" id="mapp-id">
+                            <div class="form-group">
+                                <label for="bf-tbl-nm">이전 테이블명</label>
+                                <input type="text" class="form-control" id="bf-tbl-nm">
+                            </div>
+                            <div class="form-group">
+                                <label for="bf-col-nm">이전 컬럼명</label>
+                                <input type="text" class="form-control" id="bf-col-nm">
+                            </div>
+                            <div class="form-group">
+                                <label for="new-tbl-nm">새 테이블명</label>
+                                <input type="text" class="form-control" id="new-tbl-nm" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="new-col-nm">새 컬럼명</label>
+                                <input type="text" class="form-control" id="new-col-nm" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="expl">설명</label>
+                                <textarea class="form-control" id="expl" rows="3"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">닫기</button>
+                        <button type="button" class="btn btn-primary" id="save-mapping-btn">저장</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pages/mapping.js') }}"></script>
+{% endblock %}

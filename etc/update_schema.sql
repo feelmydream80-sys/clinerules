@@ -1,0 +1,1 @@
+ALTER TABLE public.tb_user ADD COLUMN is_admin BOOLEAN DEFAULT FALSE;

@@ -1,0 +1,26 @@
+{
+    "TB_MNGR_SETT": {
+        "sett_id": "cd"
+    },
+    "TB_USER": {
+        "USER_ID": "user_id",
+        "ACC_STS": "acc_sts"
+    },
+    "TB_MENU": {
+        "MENU_ID": "menu_id",
+        "MENU_NM": "menu_nm",
+        "MENU_URL": "menu_url"
+    },
+    "TB_USER_AUTH_CTRL": {
+        "USER_ID": "user_id",
+        "MENU_ID": "menu_id"
+    },
+    "TB_CON_HIST": {
+        "JOB_ID": "job_id"
+    },
+    "TB_CON_MST": {
+        "CD": "cd",
+        "ITEM1": "item1"
+    },
+    "TB_USER_ACS_LOG": {}
+}

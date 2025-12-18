@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}API 테스트 (v2.1){% endblock %}
+
+{% block head %}
+    <style>
+        .api-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .api-section-header h3 {
+            font-size: 1.25rem; font-weight: 600; color: #1e40af;
+        }
+        .badge {
+            padding: 4px 10px; font-size: 0.8rem; border-radius: 9999px; font-weight: 500;
+        }
+        .badge-get { background-color: #e0f2fe; color: #0c4a6e; }
+        .badge-post { background-color: #dcfce7; color: #166534; }
+        .badge-delete { background-color: #fee2e2; color: #991b1b; }
+        .input-section { background-color: #f9fafb; padding: 15px; border-radius: 6px; }
+        .output-section { background-color: #f9fafb; padding: 15px; border-radius: 6px; }
+        .code-block {
+            background-color: #1f2937; color: #d1d5db; padding: 15px; border-radius: 6px;
+            overflow-x: auto; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.875rem;
+            border: 1px solid #374151;
+        }
+        /* --- FIX: 스크롤 기능 추가 --- */
+        .output-section .code-block {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .btn-primary {
+            background-color: #2563eb; color: white; padding: 8px 16px; border-radius: 6px;
+            font-weight: 500; transition: background-color 0.2s;
+        }
+        .btn-primary:hover { background-color: #1d4ed8; }
+        .btn-primary:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        .loading-spinner {
+            display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3;
+            border-radius: 50%; border-top: 3px solid #60a5fa; animation: spin 1s linear infinite;
+            vertical-align: middle; margin-right: 8px;
+        }
+        .hidden {
+            display: none;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Tab Styles */
+        .tab-button {
+            padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent;
+            font-weight: 500; color: #4b5563; transition: all 0.2s;
+        }
+        .tab-button:hover { background-color: #e5e7eb; color: #1f2937; }
+        .tab-button.active { color: #1d4ed8; border-bottom-color: #1d4ed8; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-group { margin-bottom: 20px; }
+        .tab-group h3 { font-size: 1.1rem; margin-bottom: 10px; color: #1e40af; font-weight: 600; }
+        .tabs { display: flex; margin-bottom: 10px; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container mx-auto p-4 max-w-screen-xl">
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-2xl font-semibold text-blue-800 mb-4">API 테스트 (v2.1)</h2>
+            
+            <div id="tab-container" class="border-b border-gray-200 mb-6 flex flex-wrap"></div>
+            <div id="tab-content-container"></div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <!-- Custom JavaScript -->
+    <script type="module" src="{{ url_for('static', filename='js/pages/api_test.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}데이터분석{% endblock %}
+
+{% block content %}
+    <div id="data-analysis-container" class="container mx-auto p-4 max-w-screen-xl" data-is-admin="{{ is_admin }}">
+        {% include 'collapsible_controls.html' %}
+        <!--<h1 class="text-2xl font-bold mb-6">데이터분석</h1>-->
+        <!-- 필터 영역 -->
+        <div id="filter-card" class="collapsible-card bg-white rounded-lg shadow mb-6">
+            <div class="card-header p-4 cursor-pointer flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-700">필터</h2>
+                <span class="transform transition-transform duration-300">▼</span>
+            </div>
+            <div class="card-content px-6 pb-6">
+                <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+                    <div class="flex items-center space-x-2 w-full md:flex-1">
+                        <label for="startDate" class="text-gray-600 w-16">시작일:</label>
+                        <input type="date" id="startDate" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                    </div>
+                    <div class="flex items-center space-x-2 w-full md:flex-1">
+                        <label for="endDate" class="text-gray-600 w-16">종료일:</label>
+                        <input type="date" id="endDate" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                    </div>
+                    <div class="flex items-center space-x-2 w-full md:w-auto">
+                        <label for="jobIdSelect" class="text-gray-600">Job ID:</label>
+                        <select id="jobIdSelect" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center space-x-2 w-full md:w-auto">
+                        <label for="errorCodeSelect" class="text-gray-600">장애코드:</label>
+                        <select id="errorCodeSelect" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">전체</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    실 존재 데이터 기간: <span id="data-min-date"></span> ~ <span id="data-max-date"></span>
+                </div>
+            </div>
+        </div>
+        <!-- 요약/통계 영역 -->
+        <div class="flex gap-4 mt-4 mb-8">
+  <div class="flex-1 bg-blue-50 rounded-lg p-4 shadow text-center" id="durationRangeCard">
+    <div class="text-blue-600 font-bold text-lg">최대/최소 소요 시간</div>
+    <div class="text-2xl font-bold mt-2" id="durationRange">-</div>
+  </div>
+  <div class="flex-1 bg-red-50 rounded-lg p-4 shadow text-center" id="failCountCard">
+    <div class="text-red-600 font-bold text-lg">실패 호출 건수</div>
+    <div class="text-2xl font-bold mt-2" id="failCount">-</div>
+  </div>
+  <div class="flex-1 bg-purple-50 rounded-lg p-4 shadow text-center" id="stopCountCard">
+    <div class="text-purple-600 font-bold text-lg">중단 횟수</div>
+    <div class="text-2xl font-bold mt-2" id="stopCount">-</div>
+  </div>
+</div>
+        <!-- 추이/경향 차트 영역 -->
+        <!--
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">추이/경향 차트</h2>
+            <canvas id="trendChart" height="120"></canvas>
+        </div>
+        -->
+        <!-- Job ID 상세정보 테이블 영역 -->
+        <div id="job-info-card" class="collapsible-card bg-white rounded-lg shadow-md mb-6">
+            <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-700">Job ID 상세정보</h2>
+                <span class="transform transition-transform duration-300">▼</span>
+            </div>
+            <div class="card-content px-6 pb-6">
+                <div class="flex justify-end items-center mb-4">
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-1">
+                            <label for="jobInfoSearch" class="text-sm text-gray-600">검색:</label>
+                            <input type="text" id="jobInfoSearch" placeholder="Job ID 또는 한글명 검색..." class="p-1 border border-gray-300 rounded text-sm w-48">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <label for="jobInfoPageSize" class="text-sm text-gray-600">행 수:</label>
+                            <select id="jobInfoPageSize" class="p-1 border border-gray-300 rounded text-sm">
+                                <option value="5">5개</option>
+                                <option value="10">10개</option>
+                                <option value="20">20개</option>
+                                <option value="50">50개</option>
+                                <option value="100">100개</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="jobInfoTable" class="min-w-full text-sm text-left">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">Job ID</th>
+                            <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">데이터명</th>
+                            <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">주기(cron)</th>
+                            <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">설명</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 동적으로 데이터 삽입 -->
+                    </tbody>
+                </table>
+            </div>
+                <!-- 페이징 컨트롤 -->
+                <div id="jobInfoPagination" class="mt-4 flex justify-center items-center gap-2">
+                    <!-- 페이징 버튼들이 여기에 동적으로 생성됩니다 -->
+                </div>
+            </div>
+        </div>
+        <!-- 원천데이터 테이블 제목을 '수집 및 가공 데이터'로 변경 -->
+        <div id="raw-data-card" class="collapsible-card bg-white rounded-lg shadow-md mb-6">
+            <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-xl font-semibold text-gray-700">수집 및 가공 데이터</h2>
+                    <span id="data-analysis-total-count" class="text-sm font-normal text-gray-500"></span>
+                </div>
+                <span class="transform transition-transform duration-300">▼</span>
+            </div>
+            <div class="card-content px-6 pb-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <div class="text-xs text-gray-500">최근 3회 평균: 같은 Job ID의 최근 3개 소요시간(hr)의 산술평균</div>
+                        <div class="text-xs text-gray-500">최대/최소 제외 평균: 전체 소요시간 중 최대, 최소를 제외한 평균(값이 2개 이하일 때는 일반 평균과 동일)</div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-1">
+                            <label for="rawDataSearch" class="text-sm text-gray-600">검색:</label>
+                            <input type="text" id="rawDataSearch" placeholder="Job ID 또는 장애코드 검색..." class="p-1 border border-gray-300 rounded text-sm w-48">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <label for="rawDataPageSize" class="text-sm text-gray-600">행 수:</label>
+                            <select id="rawDataPageSize" class="p-1 border border-gray-300 rounded text-sm">
+                                <option value="10">10개</option>
+                                <option value="20">20개</option>
+                                <option value="50">50개</option>
+                                <option value="100">100개</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="rawDataTable" class="min-w-full text-sm text-left">
+                    <thead><tr>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">날짜</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">Job ID</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">장애코드</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 font-semibold text-gray-700">요일</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">수집시간(hr)</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">예측 수집시간(hr)</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">완전성(%)</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">평균소요시간(hr)</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">최대/최소 제외 평균(hr)</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">최근3회평균(hr)</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">연속실패</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">이상치</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">성공률변화(%)</th>
+                        <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">누적수집</th>
+                    </tr></thead>
+                    <tbody><!-- 동적 데이터 --></tbody>
+                </table>
+            </div>
+            <div id="rawPagination" class="mt-4 flex justify-center"></div>
+            </div>
+        </div>
+        <!-- 인사이트/AI 영역을 필터 영역 바로 아래로 이동 -->
+        <!--
+        <div id="insight-ai-card" class="collapsible-card bg-white rounded-lg shadow-md mb-6">
+            <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-700">인사이트 & AI</h2>
+                <span class="transform transition-transform duration-300">▼</span>
+            </div>
+            <div class="card-content px-6 pb-6">
+                <div class="flex justify-end mb-4">
+                    <button id="analyzeBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-4 rounded-md shadow-sm">분석</button>
+                </div>
+                <div id="insightBox" class="mb-4 text-gray-700">자동 인사이트 요약이 여기에 표시됩니다.</div>
+                <div id="aiAnswer" class="bg-gray-100 p-3 rounded text-gray-800">AI 답변이 여기에 표시됩니다.</div>
+            </div>
+        </div>
+        -->
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script type="module" src="{{ url_for('static', filename='js/pages/data_analysis.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}카드 요약 대시보드{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <link id="page-specific-style" rel="stylesheet" href="{{ url_for('static', filename='css/card_summary.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="controls-container">
+    <div class="option-card">
+        <div class="option-card-title">카드 요약 표시 옵션</div>
+        <div id="display-mode-selector">
+            <label><input type="radio" name="displayMode" value="name" checked> 명칭</label>
+            <label><input type="radio" name="displayMode" value="code"> 코드</label>
+            <label><input type="radio" name="displayMode" value="both"> 명칭+코드</label>
+        </div>
+    </div>
+  </div>
+  <div class="card-grid" id="cardContainer">
+    <!-- JS로 동적 생성 -->
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script type="module" src="/static/js/pages/card_summary.js"></script>
+{% endblock %}

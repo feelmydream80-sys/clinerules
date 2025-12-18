@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Jandi{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .graph-container {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .jandi-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+    }
+    .graph {
+        width: 100%;
+        height: 150px; /* Reduced height */
+    }
+    .jandi-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        /*padding: 0.5rem; /* Reduced padding */
+        padding: 0.5rem 0.5rem 0.1rem 0.5rem; /* padding: top right bottom left; -> bottom 값을 줄였습니다. */
+        margin-bottom: -10px; /* Negative margin to reduce space */
+    }
+    .day {
+        stroke: #fff;
+        stroke-width: 2px;
+    }
+    .month, .wday {
+        font-size: 10px;
+        fill: #aaa;
+    }
+    /* Flatpickr arrow icon size override */
+    .flatpickr-months .flatpickr-prev-month svg,
+    .flatpickr-months .flatpickr-next-month svg {
+        width: 14px;
+        height: 14px;
+    }
+    .hidden {
+        display: none;
+    }
+    .rotate-180 {
+        transform: rotate(180deg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="jandi-page-container" class="container mx-auto p-4 max-w-screen-xl relative" data-is-admin="{{ is_admin }}">
+    {% include 'collapsible_controls.html' %}
+    <!-- Tooltip and Loading Indicator -->
+    <div id="tooltip" class="hidden absolute bg-gray-800 text-white text-xs rounded py-1 px-2 z-10 pointer-events-none"></div>
+    <div id="loading" class="hidden absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-20">
+        <div class="text-lg font-semibold">Loading...</div>
+    </div>
+
+    <!-- 날짜 선택 섹션 -->
+    <div id="date-selection-card-jandi" class="collapsible-card bg-white rounded-lg shadow-md mb-6">
+        <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-700">날짜 선택</h2>
+            <span class="transform transition-transform duration-300">▼</span>
+        </div>
+        <div class="card-content px-6 pb-6">
+            <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+                <div class="flex items-center space-x-2 w-full md:flex-1">
+                    <label for="start-date" class="text-gray-600 w-16">시작일:</label>
+                    <input type="date" id="start-date" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                </div>
+                <div class="flex items-center space-x-2 w-full md:flex-1">
+                    <label for="end-date" class="text-gray-600 w-16">종료일:</label>
+                    <input type="date" id="end-date" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                </div>
+                <div class="flex items-center space-x-2 w-full md:w-auto">
+                    <input type="checkbox" id="allDataCheckbox" class="form-checkbox text-blue-600">
+                    <label for="allDataCheckbox" class="text-gray-700">전체 데이터 조회</label>
+                </div>
+                <button id="filter-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow-sm transition duration-300 ease-in-out w-full md:w-auto">
+                    조회
+                </button>
+            </div>
+        </div>
+    </div>
+
+        <!-- Job ID 상세정보 테이블 영역 -->
+        <div id="job-info-card-jandi" class="collapsible-card bg-white rounded-lg shadow-md mb-6">
+            <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-700">Job ID 상세정보</h2>
+                <span class="transform transition-transform duration-300">▼</span>
+            </div>
+            <div class="card-content px-6 pb-6">
+                <div class="flex justify-end items-center mb-4">
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-1">
+                            <label for="jobInfoSearch" class="text-sm text-gray-600">검색:</label>
+                            <input type="text" id="jobInfoSearch" placeholder="Job ID 또는 한글명 검색..." class="p-1 border border-gray-300 rounded text-sm w-48">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <label for="jobInfoPageSize" class="text-sm text-gray-600">행 수:</label>
+                            <select id="jobInfoPageSize" class="p-1 border border-gray-300 rounded text-sm">
+                                <option value="5">5개</option>
+                                <option value="10">10개</option>
+                                <option value="20">20개</option>
+                                <option value="50">50개</option>
+                                <option value="100">100개</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="jobInfoTable" class="min-w-full text-sm text-left">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">Job ID</th>
+                            <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">데이터명</th>
+                            <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">주기(cron)</th>
+                            <th class="px-4 py-2 border-b text-center bg-gray-100 text-gray-700 font-semibold">설명</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 동적으로 데이터 삽입 -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- 페이징 컨트롤 -->
+            <div id="jobInfoPagination" class="mt-4 flex justify-center items-center gap-2">
+                <!-- 페이징 버튼들이 여기에 동적으로 생성됩니다 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- DataTables용 숨겨진 테이블 -->
+    <div style="display:none;">
+        <table id="job-id-table" class="display" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Job ID</th>
+                    <th>한글명</th>
+                    <th>주기(cron)</th>
+                    <th>설명</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+
+    <!-- Job ID별 잔디 현황 -->
+    <div id="jandi-monitoring-card" class="collapsible-card bg-white rounded-lg shadow-md mb-6">
+        <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-700">Job ID별 잔디 모니터링</h2>
+            <span class="transform transition-transform duration-300">▼</span>
+        </div>
+        <div class="card-content px-6 pb-6">
+            <div class="flex justify-end items-center gap-2 mb-4">
+                <div class="flex items-center gap-1">
+                    <button id="sortAsc" class="p-1 border border-gray-300 rounded text-sm bg-gray-200 hover:bg-gray-300">Job ID 오름차순</button>
+                    <button id="sortDesc" class="p-1 border border-gray-300 rounded text-sm bg-gray-200 hover:bg-gray-300">Job ID 내림차순</button>
+                </div>
+                <div class="flex items-center gap-1">
+                    <label for="jandiSearch" class="text-sm text-gray-600">검색:</label>
+                    <input type="text" id="jandiSearch" placeholder="Job ID 또는 한글명 검색..." class="p-1 border border-gray-300 rounded text-sm w-48">
+                </div>
+                <div class="flex items-center gap-1">
+                    <label for="jandiPageSize" class="text-sm text-gray-600">행 수:</label>
+                    <select id="jandiPageSize" class="p-1 border border-gray-300 rounded text-sm">
+                        <option value="5">5개</option>
+                        <option value="10">10개</option>
+                        <option value="15">15개</option>
+                        <option value="20">20개</option>
+                    </select>
+                </div>
+            </div>
+            <div id="heatmap-container" class="graph-container"></div>
+            <!-- 페이징 컨트롤 -->
+            <div id="jandiPagination" class="mt-4 flex justify-center items-center gap-2">
+                <!-- 페이징 버튼들이 여기에 동적으로 생성됩니다 -->
+            </div>
+        </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script type="module" src="{{ url_for('static', filename='js/pages/jandi.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}수집 현황 대시보드{% endblock %}</title>
+    
+    <!-- Common CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/tailwindcss.css') }}?v={{ now.timestamp() }}">
+    <link href="{{ url_for('static', filename='vendor/css/inter.css') }}?v={{ now.timestamp() }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/flatpickr.min.css') }}?v={{ now.timestamp() }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='vendor/css/dataTables.tailwindcss.min.css') }}?v={{ now.timestamp() }}">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}?v={{ now.timestamp() }}">
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-blue-100" {% if g.user %} data-user='{{ g.user | tojson | safe }}' {% endif %}>
+    <script id="menu-data" type="application/json">
+        {{ menu_items | tojson | safe }}
+    </script>
+    <script>
+        const menuDataElement = document.getElementById('menu-data');
+        window.MENU_DATA = menuDataElement ? JSON.parse(menuDataElement.textContent || '[]') : [];
+    </script>
+    {% include "navbar.html" %}
+
+    {# Flash 메시지를 JavaScript가 읽을 수 있도록 데이터 블록으로 렌더링 #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <script id="flash-messages-data" type="application/json">
+                {{ messages | tojson | safe }}
+            </script>
+        {% endif %}
+    {% endwith %}
+    
+    <main id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Common JS -->
+    <script src="{{ url_for('static', filename='vendor/js/luxon.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/js/d3.v7.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/js/jquery-3.6.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/js/flatpickr.min.js') }}"></script>
+   <script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='vendor/js/dataTables.js') }}"></script>
+    <script type="text/javascript" charset="utf8" src="{{ url_for('static', filename='vendor/js/dataTables.tailwindcss.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/js/chart.umd.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/js/chartjs-adapter-luxon.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/js/chartjs-plugin-datalabels.min.js') }}"></script>
+
+    <!-- NAV Highlight Script -->
+    <script>
+        function updateActiveNav() {
+            const links = document.querySelectorAll('a.nav-link');
+            const currentPath = window.location.pathname;
+            let bestMatch = null;
+
+            // Remove active styles from all links first
+            links.forEach(link => {
+                link.classList.remove('bg-blue-900');
+                link.classList.add('hover:bg-blue-700');
+            });
+
+            if (currentPath === '/') {
+                bestMatch = document.querySelector('a.nav-link[href="/"]');
+            } else {
+                links.forEach(link => {
+                    if (link.hostname === window.location.hostname && link.pathname !== '/') {
+                        if (currentPath.startsWith(link.pathname)) {
+                            if (!bestMatch || link.pathname.length > (bestMatch ? bestMatch.pathname.length : 0)) {
+                                bestMatch = link;
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (!bestMatch && currentPath === '/') {
+                 bestMatch = document.querySelector('a.nav-link[href="/"]');
+            }
+
+            if (bestMatch) {
+                bestMatch.classList.add('bg-blue-900');
+                bestMatch.classList.remove('hover:bg-blue-700');
+            }
+        }
+
+        window.updateActiveNav = updateActiveNav;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateActiveNav(); // Call on initial load
+
+            // User menu dropdown
+            const userMenuButton = document.getElementById('user-menu-button');
+            const userMenu = document.getElementById('user-menu');
+            const userMenuContainer = document.getElementById('user-menu-container');
+
+            if (userMenuButton && userMenu) {
+                userMenuButton.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    userMenu.classList.toggle('hidden');
+                });
+
+                document.addEventListener('click', (event) => {
+                    if (userMenuContainer && !userMenuContainer.contains(event.target)) {
+                        userMenu.classList.add('hidden');
+                    }
+                });
+            }
+
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/session_timer.js') }}?v={{ now.timestamp() }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/router.js') }}?v={{ now.timestamp() }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/utils/toast.js') }}?v={{ now.timestamp() }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

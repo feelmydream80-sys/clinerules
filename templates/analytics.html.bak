@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- 파일명: templates/analytics.html -->
+    <!-- 주요 역할: 분석 차트 페이지의 HTML 구조를 정의합니다. -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수집 현황 분석 차트</title>
+    <!-- Tailwind CSS CDN (비활성화) -->
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+    <!-- Inter Font (비활성화) -->
+    <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"> -->
+    <style>
+        /* 파일명: templates/analytics.html 내부 스타일 */
+        /* 주요 역할: 분석 차트 페이지의 스타일을 정의합니다. */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e0f2fe; /* bg-blue-100 */
+        }
+        /* Custom styles for better aesthetics */
+        .container {
+            max-width: 1000px; /* Max width for content */
+        }
+        .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .rounded-lg {
+            border-radius: 0.5rem;
+        }
+        .btn-primary {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb; /* blue-600 */
+        }
+        .btn-secondary {
+            background-color: #ef4444; /* red-500 */
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .btn-secondary:hover {
+            background-color: #dc2626; /* red-600 */
+        }
+        .job-checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 0.5rem 0.75rem;
+            background-color: #e0e7ff; /* blue-100 */
+            border-radius: 0.375rem;
+            transition: background-color 0.2s ease-in-out;
+            white-space: nowrap; /* Prevent wrapping for individual labels */
+        }
+        .job-checkbox-label:hover {
+            background-color: #c7d2fe; /* blue-200 */
+        }
+        .job-checkbox:checked + span {
+            font-weight: bold;
+            color: #1d4ed8; /* blue-700 */
+        }
+        /* Chart.js responsive container */
+        .chart-container {
+            position: relative;
+            height: 320px; /* Fixed height for charts */
+            width: 100%;
+        }
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+       
+        /* Message Container Styles (from admin.html) */
+        #messageContainer {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            box-sizing: border-box;
+        }
+       
+        .message {
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            min-width: 300px;
+        }
+       
+        .message.info { background-color: #e0f7fa; color: #007bff; }
+        .message.success { background-color: #e6ffe6; color: #28a745; }
+        .message.error { background-color: #ffe6e6; color: #dc3545; }
+       
+        .message.active {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body class="bg-blue-100">
+    <!-- Navigation Bar -->
+    <nav class="bg-blue-800 p-4 shadow-md">
+        <div class="container mx-auto flex items-center space-x-8">
+            <a href="/" class="text-white text-2xl font-bold">수집 현황 분석 차트</a>
+            <div class="space-x-4">
+                <a href="/dashboard" class="text-white hover:text-blue-200 transition duration-300">대시보드</a>
+                <a href="/analytics" class="text-white hover:text-blue-200 transition duration-300">분석</a>
+                {# 관리자 설정 링크 제거 #}
+            </div>
+        </div>
+    </nav>
+   
+    <!-- Message Container (Added for showMessage function) -->
+    <div id="messageContainer">
+        <div class="message" id="messageArea"></div>
+    </div>
+   
+    <!-- Main content area -->
+    <div class="container mx-auto p-4 max-w-screen-xl">
+        <!-- <h1> 태그 제거 -->
+        <!-- <h1 class="text-3xl font-bold mb-6 text-gray-800">수집 현황 분석 차트</h1> -->
+       
+        <!-- 날짜 선택 섹션 -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">날짜 선택</h2>
+            <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+                <div class="flex items-center space-x-2 w-full md:w-auto">
+                    <label for="startDate" class="text-gray-600">시작일:</label>
+                    <input type="date" id="startDate" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                </div>
+                <div class="flex items-center space-x-2 w-full md:w-auto">
+                    <label for="endDate" class="text-gray-600">종료일:</label>
+                    <input type="date" id="endDate" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                </div>
+                <!-- DB 데이터 범위 표시를 위한 span 추가 -->
+                <div class="text-sm text-gray-600 flex items-center w-full md:w-auto">
+                    <span class="mr-2">DB 데이터 범위:</span>
+                    <span id="analyticsMinDateDisplay" class="font-semibold mr-1">N/A</span>
+                    <span>~</span>
+                    <span id="analyticsMaxDateDisplay" class="font-semibold ml-1">N/A</span>
+                </div>
+            </div>
+        </div>
+       
+        <!-- Job ID 선택 및 버튼 섹션 -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Job ID 선택</h2>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-4 sm:space-y-0 mb-4">
+                <!-- Buttons -->
+                <div class="flex space-x-2 w-full sm:w-auto">
+                    <button onclick="selectAllJobs()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow-sm transition duration-300 ease-in-out w-full sm:w-auto">
+                        모두 선택
+                    </button>
+                    <button onclick="deselectAllJobs()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md shadow-sm transition duration-300 ease-in-out w-full sm:w-auto">
+                        모두 해제
+                    </button>
+                </div>
+                <!-- Checkboxes -->
+                <div id="jobCheckboxes" class="flex flex-wrap gap-x-4 gap-y-2 w-full">
+                    <!-- Checkboxes will be dynamically inserted here by JavaScript -->
+                </div>
+            </div>
+        </div>
+       
+        <!-- 차트 섹션 -->
+        <div class="grid grid-cols-1 gap-6">
+            <!-- 기간별 수집 성공률 차트 -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">기간별 수집 성공률</h2>
+                <div class="flex space-x-4 mb-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="successChartType" value="line" checked class="form-radio text-blue-600">
+                        <span class="ml-2 text-gray-700">라인 차트</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="successChartType" value="bar" class="form-radio text-blue-600">
+                        <span class="ml-2 text-gray-700">바 차트</span>
+                    </label>
+                </div>
+                <div class="chart-container">
+                    <canvas id="successRateChart"></canvas>
+                </div>
+            </div>
+           
+            <!-- 장애 코드별 비율 차트 -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">장애 코드별 비율</h2>
+                <div class="flex space-x-4 mb-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="troubleChartType" value="doughnut" checked class="form-radio text-blue-600">
+                        <span class="ml-2 text-gray-700">도넛 차트</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="troubleChartType" value="bar" class="form-radio text-blue-600">
+                        <span class="ml-2 text-gray-700">바 차트</span>
+                    </label>
+                </div>
+                <div class="chart-container">
+                    <canvas id="troublePieChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+   
+    <!-- Chart.js CDN (비활성화) -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/luxon@3.x/build/global/luxon.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.x/dist/chartjs-adapter-luxon.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script> -->
+    <!-- Custom JavaScript modules (type="module"로 로드) -->
+    <script type="module" src="{{ url_for('static', filename='js/modules/api.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/modules/utils.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/pages/analytics.js') }}"></script>
+</body>
+</html>

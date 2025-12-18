@@ -1,0 +1,24 @@
+UPDATE TB_MNGR_SETT
+SET
+    CNN_FAILR_THRS_VAL = %s,
+    CNN_WARN_THRS_VAL = %s,
+    CNN_FAILR_ICON_ID = %s,
+    CNN_FAILR_WRD_COLR = %s,
+    CNN_WARN_ICON_ID = %s,
+    CNN_WARN_WRD_COLR = %s,
+    CNN_SUCS_ICON_ID = %s,
+    CNN_SUCS_WRD_COLR = %s,
+    DLY_SUCS_RT_THRS_VAL = %s,
+    DD7_SUCS_RT_THRS_VAL = %s,
+    MTHL_SUCS_RT_THRS_VAL = %s,
+    MC6_SUCS_RT_THRS_VAL = %s,
+    YY1_SUCS_RT_THRS_VAL = %s,
+    SUCS_RT_SUCS_ICON_ID = %s,
+    SUCS_RT_SUCS_WRD_COLR = %s,
+    SUCS_RT_WARN_ICON_ID = %s,
+    SUCS_RT_WARN_WRD_COLR = %s,
+    CHRT_COLR = %s,
+    CHRT_DSP_YN = %s,
+    GRASS_CHRT_MIN_COLR = %s,
+    GRASS_CHRT_MAX_COLR = %s
+WHERE CD = %s

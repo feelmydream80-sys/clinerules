@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}데이터 보고{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">데이터 보고</h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">수집 현황 보고서</h6>
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                <label class="btn btn-sm btn-primary active">
+                    <input type="radio" name="view-type" id="weekly-view" value="weekly" checked> 주간
+                </label>
+                <label class="btn btn-sm btn-primary">
+                    <input type="radio" name="view-type" id="monthly-view" value="monthly"> 월간
+                </label>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="report-table" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>날짜</th>
+                            <th>Job ID</th>
+                            <th>예정 시간</th>
+                            <th>상태</th>
+                            <th>상세 정보</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-table-body">
+                        <!-- 데이터가 여기에 동적으로 추가됩니다. -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="loading-indicator" class="text-center" style="display: none;">
+                <div class="spinner-border" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pages/data_report.js') }}"></script>
+{% endblock %}

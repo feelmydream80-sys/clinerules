@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}수집 현황 분석 차트{% endblock %}
+
+{% block head %}
+    {{ super() }}
+{% endblock %}
+
+{% block content %}
+    <!-- 2025-09-01: 사용자 요청으로 알림 메시지 컨테이너 주석 처리 -->
+    <!--
+    <div id="messageContainer">
+        <div class="message" id="messageArea"></div>
+    </div>
+    -->
+   
+    <!-- Main content area -->
+    <div class="container mx-auto p-4" data-is-admin="{{ 'True' if g.user and 'mngr_sett' in g.user.get('permissions', []) else 'False' }}">
+        {% include 'collapsible_controls.html' %}
+        <!-- <h1> 태그 제거 -->
+        <!-- <h1 class="text-3xl font-bold mb-6 text-gray-800">수집 현황 분석 차트</h1> -->
+       
+        <!-- 날짜 선택 섹션 -->
+        <div id="date-selection-card-chart" class="collapsible-card bg-white rounded-lg shadow-md mb-6">
+            <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-700">날짜 선택</h2>
+                <span class="transform transition-transform duration-300">▼</span>
+            </div>
+            <div class="card-content px-6 pb-6">
+                <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+                    <div class="flex items-center space-x-2 w-full md:flex-1">
+                        <label for="startDate" class="text-gray-600 w-16">시작일:</label>
+                        <input type="date" id="startDate" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                    </div>
+                    <div class="flex items-center space-x-2 w-full md:flex-1">
+                        <label for="endDate" class="text-gray-600 w-16">종료일:</label>
+                        <input type="date" id="endDate" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
+                    </div>
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    실 존재 데이터 기간: <span id="chart-min-date"></span> ~ <span id="chart-max-date"></span>
+                </div>
+            </div>
+        </div>
+       
+        <!-- 차트 표시 옵션 -->
+        <div id="chart-options-card" class="collapsible-card bg-white rounded-lg shadow-md mb-6">
+            <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-700">차트 표시 옵션</h2>
+                <span class="transform transition-transform duration-300">▼</span>
+            </div>
+            <div class="card-content px-6 pb-6">
+                <div class="flex space-x-4 mb-4">
+                    <span class="text-gray-700 font-semibold">라벨 표시 방식:</span>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="labelDisplayType" value="name" checked class="form-radio text-blue-600">
+                        <span class="ml-2 text-gray-700">명칭</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="labelDisplayType" value="code" class="form-radio text-blue-600">
+                        <span class="ml-2 text-gray-700">코드</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job ID 선택 및 버튼 섹션 -->
+        <div id="job-selection-card-chart" class="collapsible-card bg-white rounded-lg shadow-md mb-6">
+            <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-700">Job ID 선택</h2>
+                <span class="transform transition-transform duration-300">▼</span>
+            </div>
+            <div class="card-content px-6 pb-6">
+                <!-- Buttons -->
+                <div class="flex space-x-2 w-full sm:w-auto mb-4">
+                    <button onclick="selectAllJobs()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow-sm transition duration-300 ease-in-out w-full sm:w-auto">
+                        모두 선택
+                    </button>
+                    <button onclick="deselectAllJobs()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-md shadow-sm transition duration-300 ease-in-out w-full sm:w-auto">
+                        모두 해제
+                    </button>
+                </div>
+                <!-- Checkboxes -->
+                <div id="jobCheckboxes" class="flex flex-wrap gap-x-4 gap-y-2 w-full">
+                    <!-- Checkboxes will be dynamically inserted here by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 차트 섹션 -->
+        <div class="grid grid-cols-1 gap-6">
+            <!-- 기간별 수집 성공률 차트 -->
+            <div id="success-rate-chart-card" class="collapsible-card bg-white rounded-lg shadow-md">
+                <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-gray-700">기간별 수집 성공률</h2>
+                    <span class="transform transition-transform duration-300">▼</span>
+                </div>
+                <div class="card-content px-6 pb-6">
+                    <div class="flex space-x-4 mb-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="successChartType" value="line" checked class="form-radio text-blue-600">
+                        <span class="ml-2 text-gray-700">라인 차트</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="successChartType" value="bar" class="form-radio text-blue-600">
+                        <span class="ml-2 text-gray-700">바 차트</span>
+                    </label>
+                    </div>
+                    <div class="chart-container min-h-[300px]">
+                        <canvas id="successRateChart"></canvas>
+                    </div>
+                </div>
+            </div>
+           
+            <!-- 장애 코드별 비율 차트 -->
+            <div id="trouble-code-chart-card" class="collapsible-card bg-white rounded-lg shadow-md">
+                <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-gray-700">장애 코드별 비율</h2>
+                    <span class="transform transition-transform duration-300">▼</span>
+                </div>
+                <div class="card-content px-6 pb-6">
+                    <div class="flex space-x-4 mb-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="troubleChartType" value="doughnut" checked class="form-radio text-blue-600">
+                        <span class="ml-2 text-gray-700">도넛 차트</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="troubleChartType" value="bar" class="form-radio text-blue-600">
+                        <span class="ml-2 text-gray-700">바 차트</span>
+                    </label>
+                    </div>
+                    <div class="chart-container min-h-[300px]">
+                        <canvas id="troublePieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <!-- Custom JavaScript modules (type="module"로 로드) -->
+    <script type="module" src="{{ url_for('static', filename='js/pages/chart_analysis.js') }}"></script>
+{% endblock %}

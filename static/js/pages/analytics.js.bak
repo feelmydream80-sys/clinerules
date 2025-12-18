@@ -1,0 +1,732 @@
+// 파일명: static/js/pages/analytics.js
+/* 주요 역할: 분석 페이지의 데이터 로드 및 UI 렌더링을 담당합니다. */
+
+// @AI_FIX: [신규 기능] 분석 차트용 API 함수들을 import 합니다.
+// 함수 이름이 api.js에서 fetchAnalyticsSuccessRateTrend, fetchAnalyticsTroubleByCode로 변경되었습니다.
+import { fetchAllMstList, fetchMinMaxDates, fetchAnalyticsSuccessRateTrend, fetchAnalyticsTroubleByCode, fetchAllAdminSettings, setDataFlowStatus } from '../modules/api.js';
+import { showMessage } from '../modules/utils.js';
+
+// @AI_NOTE: Chart.js 4+ 버전에서는 플러그인 등록을 명시적으로 해야 합니다.
+// HTML에서 로드된 ChartDataLabels 전역 객체를 사용하기 위해 이 위치에서 등록합니다.
+// @AI_IMPORTANT: ChartDataLabels 플러그인 자체는 모든 차트에서 사용될 수 있으므로,
+// 이 등록 코드는 주석 처리하지 않고 유지합니다.
+// 각 차트의 datalabels 표시 여부는 해당 차트의 options.plugins.datalabels.display 속성으로 제어합니다.
+if (typeof ChartDataLabels !== 'undefined') {
+    Chart.register(ChartDataLabels);
+} else {
+    console.error("ChartDataLabels plugin not found. Ensure it's loaded before analytics.js.");
+}
+
+
+// @AI_NOTE: 전역 변수 (차트 인스턴스)
+let successRateChart = null; // 기간별 수집 성공률 차트
+let troublePieChart = null;  // 장애 코드별 비율 차트
+
+// @AI_NOTE: 전역 변수로 Job ID 목록 저장
+let allJobMstList = [];
+// @AI_FIX: 전역 변수로 관리자 설정 목록 저장
+let allAdminSettings = [];
+
+// @AI_FIX: 로딩 오버레이 요소 가져오기
+const analyticsLoadingOverlay = document.getElementById('analyticsLoadingOverlay');
+
+// @AI_NOTE: 데이터 흐름 상태를 추적하는 객체 (디버깅용)
+let dataFlowStatus = {
+    // @AI_FIX: 분석 차트용 새로운 API 상태 추적 이름 추가
+    analyticsSuccessRateTrendFetch: {
+        apiCallInitiated: false, apiCallSuccess: false, apiResponseCount: 0,
+        dataProcessedCount: 0, chartRendered: false, error: null
+    },
+    analyticsTroubleDataFetch: {
+        apiCallInitiated: false, apiCallSuccess: false, apiResponseCount: 0,
+        dataProcessedCount: 0, chartRendered: false, error: null
+    },
+    mstListFetch: {
+        apiCallInitiated: false, apiCallSuccess: false, apiResponseCount: 0,
+        dataProcessedCount: 0, error: null
+    },
+    minMaxDatesFetch: {
+        apiCallInitiated: false, apiCallSuccess: false, apiResponseCount: 0,
+        dataProcessedCount: 0, error: null
+    },
+    adminSettingsFetch: { // @AI_FIX: adminSettingsFetch 상태 추가
+        apiCallInitiated: false, apiCallSuccess: false, apiResponseCount: 0,
+        dataProcessedCount: 0, error: null
+    },
+    overallStatus: "idle"
+};
+
+// @AI_NOTE: dataFlowStatus 객체를 api.js 모듈에 설정합니다.
+setDataFlowStatus(dataFlowStatus);
+
+// @AI_FIX: 차트 데이터셋에 사용할 기본 색상 팔레트 정의 (관리자 설정이 없을 경우 폴백)
+const DEFAULT_CHART_COLORS = [
+    'rgb(255, 99, 132)',    // Red
+    'rgb(54, 162, 235)',    // Blue
+    'rgb(255, 206, 86)',    // Yellow
+    'rgb(75, 192, 192)',    // Green
+    'rgb(153, 102, 255)',   // Purple
+    'rgb(255, 159, 64)',    // Orange
+    'rgb(201, 203, 207)',   // Grey
+    'rgb(23, 162, 184)',    // Cyan
+    'rgb(108, 117, 125)',   // Dark Grey
+    'rgb(0, 123, 255)'      // Dodger Blue
+];
+
+// 장애 코드별 색상 매핑
+const errorCodeColorMap = {
+    'CD901': '#22c55e', // 정상(성공) - 초록
+    'CD902': '#ef4444', // 실패 - 빨강
+    'CD903': '#f59e42', // 미수집 - 주황
+    'CD904': '#22c55e', // 계측중 - 초록
+    // 기타 상태코드도 필요시 추가
+};
+
+
+/**
+ * @AI_NOTE: 페이지 로드 시 초기 데이터를 로드하고 UI를 렌더링하는 메인 함수입니다.
+ */
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("DOM Content Loaded. Initializing analytics page.");
+    dataFlowStatus.overallStatus = "loading";
+    try {
+        // @AI_NOTE: 초기 데이터 로드 (Job ID 목록, 최소/최대 날짜, 관리자 설정)
+        await Promise.all([
+            loadAllMstList(),
+            loadAdminSettings(), // @AI_FIX: 관리자 설정 로드 추가
+            fetchAndDisplayMinMaxDatesAnalytics(
+                document.getElementById('analyticsMinDateDisplay'),
+                document.getElementById('analyticsMaxDateDisplay')
+            )
+        ]);
+
+        initializeDatePickers();
+        initializeChartTypeRadios();
+       
+        // @AI_NOTE: 초기 차트 데이터 로드 (모든 Job ID 선택 상태로 시작)
+        await loadAnalyticsPageData();
+
+        dataFlowStatus.overallStatus = "success";
+        showMessage('분석 페이지 로드 완료.', 'success');
+        console.log("Analytics page initialized successfully.");
+
+    } catch (error) {
+        dataFlowStatus.overallStatus = "error";
+        console.error("분석 페이지 초기화 실패:", error);
+        showMessage('분석 페이지 초기화 중 오류 발생: ' + error.message, 'error');
+    }
+});
+
+/**
+ * @AI_NOTE: 모든 Job ID 목록을 로드하고 체크박스를 렌더링합니다.
+ */
+async function loadAllMstList() {
+    console.log("Loading all MST list for analytics...");
+    dataFlowStatus.mstListFetch.apiCallInitiated = true;
+    try {
+        allJobMstList = await fetchAllMstList();
+        renderJobCheckboxes(allJobMstList);
+        dataFlowStatus.mstListFetch.apiCallSuccess = true;
+        dataFlowStatus.mstListFetch.apiResponseCount = allJobMstList.length;
+        dataFlowStatus.mstListFetch.dataProcessedCount = allJobMstList.length;
+        console.log("MST list loaded for analytics:", allJobMstList);
+    } catch (error) {
+        dataFlowStatus.mstListFetch.error = error.message;
+        console.error("Failed to load MST list for analytics:", error);
+        showMessage('Job ID 목록 로드 실패: ' + error.message, 'error');
+        throw error;
+    }
+}
+
+/**
+ * @AI_FIX: 모든 관리자 설정 데이터를 로드합니다.
+ */
+async function loadAdminSettings() {
+    console.log("Loading admin settings for analytics...");
+    dataFlowStatus.adminSettingsFetch.apiCallInitiated = true;
+    try {
+        allAdminSettings = await fetchAllAdminSettings();
+        dataFlowStatus.adminSettingsFetch.apiCallSuccess = true;
+        dataFlowStatus.adminSettingsFetch.apiResponseCount = allAdminSettings.length;
+        dataFlowStatus.adminSettingsFetch.dataProcessedCount = allAdminSettings.length;
+        console.log("Admin settings loaded:", allAdminSettings);
+    } catch (error) {
+        dataFlowStatus.adminSettingsFetch.error = error.message;
+        console.error("Failed to load admin settings for analytics:", error);
+        showMessage('관리자 설정 로드 실패: ' + error.message, 'error');
+        throw error;
+    }
+}
+
+
+/**
+ * @AI_NOTE: Job ID 체크박스를 동적으로 렌더링합니다.
+ * @param {Array<Object>} mstList - Job ID 목록
+ */
+function renderJobCheckboxes(mstList) {
+    const jobCheckboxesContainer = document.getElementById('jobCheckboxes');
+    if (!jobCheckboxesContainer) {
+        console.error("Error: jobCheckboxes container not found.");
+        return;
+    }
+    jobCheckboxesContainer.innerHTML = ''; // 기존 체크박스 초기화
+
+    mstList.forEach(job => {
+        // @AI_FIX: job.job_id가 유효한 경우에만 체크박스 생성
+        if (job.job_id) {
+            const label = document.createElement('label');
+            label.className = 'job-checkbox-label';
+            label.innerHTML = `
+                <input type="checkbox" class="job-checkbox form-checkbox text-blue-600 mr-2" value="${job.job_id}" checked>
+                <span>${job.cd || job.job_id}</span>
+            `;
+            jobCheckboxesContainer.appendChild(label);
+        }
+    });
+
+    // 체크박스 변경 이벤트 리스너 추가
+    jobCheckboxesContainer.querySelectorAll('.job-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', loadAnalyticsPageData);
+    });
+    console.log("Job ID checkboxes rendered.");
+}
+
+/**
+ * @AI_NOTE: 모든 Job ID 체크박스를 선택합니다.
+ */
+window.selectAllJobs = () => {
+    document.querySelectorAll('.job-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    loadAnalyticsPageData();
+    console.log("All Job IDs selected.");
+};
+
+/**
+ * @AI_NOTE: 모든 Job ID 체크박스를 해제합니다.
+ */
+window.deselectAllJobs = () => {
+    document.querySelectorAll('.job-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    loadAnalyticsPageData();
+    console.log("All Job IDs deselected.");
+};
+
+
+/**
+ * @AI_NOTE: 날짜 선택기(Datepicker)를 초기화하고 변경 이벤트를 설정합니다.
+ */
+function initializeDatePickers() {
+    const startDatePicker = document.getElementById('startDate');
+    const endDatePicker = document.getElementById('endDate');
+
+    const currentYear = luxon.DateTime.local().year;
+    const defaultStartDate = luxon.DateTime.local().set({ year: currentYear, month: 1, day: 1 }).toISODate();
+    const defaultEndDate = luxon.DateTime.local().toISODate();
+
+    if (startDatePicker) startDatePicker.value = defaultStartDate;
+    if (endDatePicker) endDatePicker.value = defaultEndDate;
+
+    if (startDatePicker) startDatePicker.addEventListener('change', loadAnalyticsPageData);
+    if (endDatePicker) endDatePicker.addEventListener('change', loadAnalyticsPageData);
+    console.log("Date pickers initialized for analytics.");
+}
+
+/**
+ * @AI_NOTE: 차트 타입 라디오 버튼 변경 이벤트를 설정합니다.
+ */
+function initializeChartTypeRadios() {
+    document.querySelectorAll('input[name="successChartType"]').forEach(radio => {
+        radio.addEventListener('change', loadAnalyticsPageData);
+    });
+    document.querySelectorAll('input[name="troubleChartType"]').forEach(radio => {
+        radio.addEventListener('change', loadAnalyticsPageData);
+    });
+    console.log("Chart type radios initialized.");
+}
+
+/**
+ * @AI_NOTE: 분석 페이지의 모든 데이터를 로드하고 차트를 렌더링하는 메인 함수입니다.
+ */
+async function loadAnalyticsPageData() {
+    console.log("loadAnalyticsPageData called.");
+    dataFlowStatus.overallStatus = "loading";
+
+    // @AI_FIX: 로딩 오버레이 표시
+    if (analyticsLoadingOverlay) {
+        analyticsLoadingOverlay.classList.remove('hidden');
+    }
+
+    const startDate = document.getElementById('startDate')?.value || '';
+    const endDate = document.getElementById('endDate')?.value || '';
+   
+    // @AI_FIX: 선택된 Job ID를 가져올 때 유효한 값만 필터링 (null, undefined, 빈 문자열 제거)
+    const selectedJobIds = Array.from(document.querySelectorAll('.job-checkbox:checked'))
+                                .map(checkbox => checkbox.value)
+                                .filter(value => value && value !== 'undefined' && value !== null);
+
+    const successChartType = document.querySelector('input[name="successChartType"]:checked')?.value || 'line';
+    const troubleChartType = document.querySelector('input[name="troubleChartType"]:checked')?.value || 'doughnut';
+
+    console.log(`Analytics Parameters: Start Date: ${startDate}, End Date: ${endDate}, Selected Job IDs: ${selectedJobIds.join(', ')}, Success Chart Type: ${successChartType}, Trouble Chart Type: ${troubleChartType}`);
+
+    // 모든 Job ID가 해제된 경우: 차트에 빈 데이터만 표시하고 API 호출하지 않음
+    if (selectedJobIds.length === 0) {
+        renderSuccessRateChart([], successChartType);
+        renderTroublePieChart([], troubleChartType, startDate, endDate);
+        if (analyticsLoadingOverlay) analyticsLoadingOverlay.classList.add('hidden');
+        return;
+    }
+
+    try {
+        // @AI_FIX: [신규 기능] 분석 차트용 API 함수를 호출합니다.
+        const successRateData = await fetchAnalyticsSuccessRateTrend(startDate, endDate, selectedJobIds);
+        console.log("Analytics Success Rate Data:", successRateData);
+
+        // @AI_FIX: [신규 기능] 분석 차트용 API 함수를 호출합니다.
+        const troubleCodeData = await fetchAnalyticsTroubleByCode(startDate, endDate, selectedJobIds);
+        console.log("Analytics Trouble Code Data:", troubleCodeData);
+
+        // @AI_NOTE: 차트 렌더링
+        renderSuccessRateChart(successRateData, successChartType);
+        renderTroublePieChart(troubleCodeData, troubleChartType, startDate, endDate);
+       
+        dataFlowStatus.analyticsSuccessRateTrendFetch.apiCallSuccess = true; // 새로운 상태 추적 이름 사용
+        dataFlowStatus.analyticsTroubleDataFetch.apiCallSuccess = true;     // 새로운 상태 추적 이름 사용
+        dataFlowStatus.analyticsSuccessRateTrendFetch.chartRendered = true; // 새로운 상태 추적 이름 사용
+        dataFlowStatus.analyticsTroubleDataFetch.chartRendered = true;      // 새로운 상태 추적 이름 사용
+        showMessage('분석 차트 업데이트 완료.', 'success');
+        console.log("Current Data Flow Status (Analytics Update Completed):", dataFlowStatus);
+
+    } catch (error) {
+        dataFlowStatus.overallStatus = "error";
+        dataFlowStatus.analyticsSuccessRateTrendFetch.error = error.message; // 새로운 상태 추적 이름 사용
+        dataFlowStatus.analyticsTroubleDataFetch.error = error.message;      // 새로운 상태 추적 이름 사용
+        dataFlowStatus.analyticsSuccessRateTrendFetch.chartRendered = false; // 새로운 상태 추적 이름 사용
+        dataFlowStatus.analyticsTroubleDataFetch.chartRendered = false;      // 새로운 상태 추적 이름 사용
+        console.error("분석 차트 로딩 중 오류 발생:", error);
+        showMessage('분석 차트 로딩 중 오류 발생: ' + error.message, 'error');
+    } finally {
+        // @AI_FIX: 로딩 오버레이 숨기기 (성공 또는 실패 여부와 관계없이)
+        if (analyticsLoadingOverlay) {
+            analyticsLoadingOverlay.classList.add('hidden');
+        }
+    }
+}
+
+/**
+ * @AI_NOTE: Chart.js를 사용하여 기간별 수집 성공률 차트를 렌더링하는 함수입니다.
+ * @param {Array<Object>} data - 차트 데이터 (예: [{date: 'Wed, 01 Jan 2025 00:00:00 GMT', job_id: 'CD201', success_rate: '90.5000'}])
+ * @param {string} chartType - 'line' 또는 'bar'
+ *
+ * @AI_DOCUMENTATION:
+ * 이 함수는 백엔드 API로부터 받은 원본 데이터를 Chart.js가 이해할 수 있는 형식으로 변환하여
+ * 기간별 Job ID별 수집 성공률 차트(라인 또는 바)를 렌더링합니다.
+ *
+ * 1.  **입력 데이터 형식 (백엔드 API 응답):**
+ * - `data` 매개변수는 다음과 같은 객체 배열입니다:
+ * ```json
+ * [
+ * { "date": "Wed, 01 Jan 2025 00:00:00 GMT", "job_id": "CD201", "success_rate": "66.6666666666666667" },
+ * { "date": "Wed, 01 Jan 2025 00:00:00 GMT", "job_id": "CD203", "success_rate": "79.0000000000000000" },
+ * { "date": "Thu, 02 Jan 2025 00:00:00 GMT", "job_id": "CD201", "success_rate": "93.3333333333333333" }
+ * ]
+ * ```
+ * - `date`: HTTP Date 형식의 문자열 (예: "Wed, 01 Jan 2025 00:00:00 GMT").
+ * - `job_id`: 작업 ID (예: "CD201").
+ * - `success_rate`: 성공률 (문자열).
+ *
+ * 2.  **데이터 변환 과정:**
+ * a.  **`groupedData` 생성:** `job_id`를 기준으로 데이터를 그룹화합니다.
+ * ```javascript
+ * {
+ * "CD201": [ {date: "...", job_id: "CD201", ...}, {date: "...", job_id: "CD201", ...} ],
+ * "CD203": [ {date: "...", job_id: "CD203", ...} ]
+ * }
+ * ```
+ * b.  **`allDates` (X축 라벨) 생성:**
+ * - 모든 `job_id`에 걸쳐 존재하는 고유한 날짜들을 추출합니다.
+ * - `luxon.DateTime.fromHTTP(item.date).toISODate()`를 사용하여 각 날짜 문자열을 **"YYYY-MM-DD" 형식**으로 변환합니다.
+ * - 변환된 날짜들을 오름차순으로 정렬하여 X축의 순서를 결정합니다.
+ * - **예시:** `["2025-01-01", "2025-01-02", "2025-01-03"]`
+ *
+ * c.  **`datasets` 생성 (각 라인/바):**
+ * - `groupedData`의 각 `job_id`에 대해 하나의 `dataset` 객체를 생성합니다.
+ * - **`dataset.data` (Y축 값 배열):**
+ * - `allDates` 배열의 각 날짜에 대해 해당 `job_id`의 `success_rate`를 매핑한 **숫자 배열**을 생성합니다.
+ * - **데이터가 없는 날짜 처리:**
+ * - `chartType === 'line'` (라인 차트): 해당 날짜에 데이터가 없으면 `null`을 삽입합니다. (`spanGaps: true` 설정으로 선이 끊기지 않고 연결됩니다.)
+ * - `chartType === 'bar'` (바 차트): 해당 날짜에 데이터가 없으면 `0`을 삽입합니다. (0 높이의 바가 표시됩니다.)
+ * - **`chartType`에 따른 `datalabels` 표시 여부:**
+ * - 사용자 요청에 따라, 이 차트(`renderSuccessRateChart`)에서는 `datalabels`가 **항상 비활성화**됩니다.
+ * - `dataset` 객체와 `options.plugins` 내의 `datalabels` 속성이 모두 주석 처리되어 있습니다.
+ *
+ * 3.  **Chart.js 최종 데이터 구조:**
+ * `new Chart(ctx, { type: chartType, data: { labels: allDates, datasets: datasets }, options: ... })` 형태로 Chart.js에 전달됩니다.
+ * `x`축 `type`은 사용자 요청에 따라 `'category'`로 통일되어, 날짜를 시간 스케일이 아닌 범주형으로 처리합니다.
+ */
+function renderSuccessRateChart(data, chartType) {
+    
+    const ctx = document.getElementById('successRateChart')?.getContext('2d');
+    if (!ctx) {
+        console.error("Success Rate Chart canvas element not found.");
+        return;
+    }
+
+    if (successRateChart) {
+        successRateChart.destroy();
+    }
+
+    console.log("renderSuccessRateChart: Raw data received (from API):", data);
+
+    // @AI_STEP_1: Job ID별로 데이터를 그룹화합니다.
+    const groupedData = data.reduce((acc, item) => {
+        // job_id가 유효한 문자열인지 확인하여 키로 사용합니다.
+        const jobId = String(item.job_id);
+        if (!acc[jobId]) {
+            acc[jobId] = [];
+        }
+        acc[jobId].push(item);
+        return acc;
+    }, {});
+
+    console.log("renderSuccessRateChart: Grouped data (after reduce):", groupedData);
+    console.log("renderSuccessRateChart: Keys of grouped data (jobIds):", Object.keys(groupedData));
+
+    // @AI_STEP_2: 모든 Job ID에 걸쳐 존재하는 고유한 날짜 라벨을 추출하고 "YYYY-MM-DD" 형식으로 변환 후 정렬합니다.
+    // luxon.DateTime.fromHTTP()를 사용하여 HTTP Date 형식 문자열을 파싱합니다.
+    // .toISODate()를 사용하여 "YYYY-MM-DD" 형식의 날짜 문자열을 얻습니다.
+    const allDates = [...new Set(data.map(item => luxon.DateTime.fromHTTP(item.date).toISODate()))].sort();
+    console.log("renderSuccessRateChart: All unique dates (labels for X-axis):", allDates);
+
+    // @AI_STEP_3: 각 Job ID에 대한 데이터셋을 생성합니다.
+    const datasets = Object.keys(groupedData).map((jobIdKey, index) => {
+        // 실제 Job ID를 가져오고, 'undefined'나 'null' 문자열 키를 처리합니다.
+        const actualJobId = (jobIdKey === 'undefined' || jobIdKey === 'null' || !jobIdKey) ? 'UNKNOWN_JOB' : jobIdKey;
+
+        // 해당 Job ID의 데이터를 날짜(YYYY-MM-DD) 기준으로 정렬합니다.
+        const jobData = groupedData[jobIdKey].sort((a, b) => {
+            const dateA = luxon.DateTime.fromHTTP(a.date).toISODate();
+            const dateB = luxon.DateTime.fromHTTP(b.date).toISODate();
+            return dateA.localeCompare(dateB); // 문자열 비교로 날짜 정렬
+        });
+       
+        // Chart.js의 'category' X축 타입에 맞게 Y값 배열(dataPoints)을 구성합니다.
+        const dataPoints = allDates.map(date => {
+            // "YYYY-MM-DD" 형식의 date와 일치하는 데이터 항목을 찾습니다.
+            const item = jobData.find(d => luxon.DateTime.fromHTTP(d.date).toISODate() === date);
+           
+            // 차트 타입에 따라 데이터가 없는 경우 null 또는 0을 반환합니다.
+            if (chartType === 'line') {
+                // 라인 차트: 데이터가 없으면 null (spanGaps로 연결)
+                return item ? parseFloat(item.success_rate) : null;
+            } else { // 'bar' 차트
+                // 바 차트: 데이터가 없으면 0 (0 높이의 바 표시)
+                return item ? parseFloat(item.success_rate || 0) : 0;
+            }
+        });
+
+        // 관리자 설정에서 차트 색상(chart_color)을 가져오거나 기본 색상 팔레트를 사용합니다.
+        const adminSetting = allAdminSettings.find(setting => setting.cd === actualJobId);
+        const dynamicColor = adminSetting && adminSetting.chart_color ? adminSetting.chart_color : DEFAULT_CHART_COLORS[index % DEFAULT_CHART_COLORS.length];
+       
+        const borderColor = dynamicColor;
+        const backgroundColor = dynamicColor.replace('rgb', 'rgba').replace(')', ', 0.5)');
+
+        // Job ID의 이름을 allJobMstList에서 가져와 사용하거나, 없으면 Job ID 자체를 사용합니다.
+        const jobMst = allJobMstList.find(mst => mst.job_id === actualJobId);
+        const displayLabel = jobMst ? jobMst.cd || actualJobId : actualJobId; // cd_nm이 없으면 job_id 사용
+
+        const dataset = {
+            label: `${displayLabel}`, // 데이터셋 라벨 설정
+            data: dataPoints, // Y값 배열 (숫자 또는 null)
+            borderColor: borderColor,
+            backgroundColor: backgroundColor,
+            tension: 0.1, // 라인 차트의 곡선 정도
+            fill: false,  // 라인 아래 영역 채우기 여부
+            spanGaps: chartType === 'line' ? true : false, // 라인 차트일 때만 null 값 건너뛰고 연결
+           
+            // @AI_FIX_DATALABELS: 사용자 요청: '기간별 수집 성공률 차트'의 데이터 라벨은 항상 비활성화합니다.
+            // 이 datalabels 블록 전체를 주석 처리하여 기능을 비활성화합니다.
+            // 이 부분을 주석 해제하면 기간별 차트에도 데이터 라벨이 표시됩니다.
+            datalabels: {
+                align: 'end', // 라벨 정렬 (end, center, start)
+                anchor: 'end', // 라벨 위치 (end, center, start)
+                color: '#000', // 라벨 색상
+                formatter: (value) => {
+                    // value는 이제 항상 숫자 (또는 null)입니다.
+                    return value !== null ? value.toFixed(2) + '%' : ''; // null이 아니면 값에 '%' 추가
+                },
+                display: function(context) {
+                    // 이 함수가 false를 반환하면 해당 데이터 라벨은 표시되지 않습니다.
+                    return false; // 모든 차트 타입에서 데이터 라벨 숨김
+                }
+            }
+        };
+        console.log(`renderSuccessRateChart: Dataset for ${actualJobId}:`, dataset);
+        return dataset;
+    });
+
+    console.log("renderSuccessRateChart: Final datasets array (passed to Chart.js):", datasets);
+
+    let scalesConfig = {
+        y: {
+            beginAtZero: true, // Y축을 0부터 시작
+            max: 100,          // Y축 최대값을 100으로 설정
+            title: {
+                display: true,
+                text: '성공률 (%)' // Y축 제목
+            }
+        },
+        x: {
+            title: {
+                display: true,
+                text: '날짜' // X축 제목
+            },
+            type: 'category', // @AI_FIX: 사용자 피드백에 따라 X축을 항상 'category' 타입으로 통일
+            ticks: {
+                autoSkip: true,     // 라벨이 너무 많을 때 자동으로 건너뛰기
+                maxTicksLimit: 20   // 표시될 최대 라벨 수
+                // @AI_NOTE: allDates가 이미 "YYYY-MM-DD" 형식이므로,
+                // 날짜 포맷팅을 위한 별도의 callback 함수는 필요 없습니다.
+            }
+        }
+    };
+
+    successRateChart = new Chart(ctx, {
+        type: chartType, // 'line' 또는 'bar'
+        data: {
+            labels: allDates, // X축 라벨 (YYYY-MM-DD 형식의 날짜 배열)
+            datasets: datasets // Job ID별로 생성된 데이터셋 배열
+        },
+        options: {
+            responsive: true,       // 컨테이너 크기에 따라 차트 크기 조절
+            maintainAspectRatio: false, // 차트의 가로세로 비율 유지 안 함 (컨테이너에 맞춤)
+            scales: scalesConfig,   // 동적으로 생성된 scalesConfig 적용
+            plugins: {
+                tooltip: { // 툴팁 설정
+                    enabled: true,      // E1 툴팁이 안나오는 현상으로 추가
+                    mode: 'nearest',    // E1 툴팁이 안나오는 현상으로 추가
+                    intersect: false,   // E1 툴팁이 안나오는 현상으로 추가
+                    callbacks: {
+                        label: function(context) {
+                            // context.raw는 이제 항상 숫자 (또는 null)입니다.
+                            const actualValue = context.raw;
+                            // 툴팁에 데이터셋 라벨과 포맷팅된 값 표시
+                            return context.dataset.label + ': ' + (actualValue !== null ? parseFloat(actualValue).toFixed(2) : 'N/A') + '%';
+                        }
+                    }
+                },
+                // @AI_FIX_DATALABELS: 사용자 요청: '기간별 수집 성공률 차트'의 데이터 라벨은 항상 비활성화합니다.
+                // 이 datalabels 블록 전체를 주석 처리하여 기능을 비활성화합니다.
+                // 이 부분을 주석 해제하면 기간별 차트에도 데이터 라벨이 표시됩니다.
+                datalabels: {
+                    formatter: (value) => {
+                        // value는 이제 항상 숫자 (또는 null)입니다.
+                        return value !== null ? value.toFixed(2) + '%' : '';
+                    },
+                    display: function(context) {
+                        // 이 함수가 false를 반환하면 해당 데이터 라벨은 표시되지 않습니다.
+                        return false; // 모든 차트 타입에서 데이터 라벨 숨김
+                    }
+                },
+                title: { // 차트 제목 설정
+                    display: true,
+                    text: '기간별 Job ID별 수집 성공률 추이'
+                }
+            },
+            elements: {
+                point: {
+                    radius: 0, // 포인트 크기 0으로 설정 (숨김)
+                    hitRadius: 0 // 클릭 감지 범위도 0으로
+                }
+            },
+            animation: { // 차트 애니메이션 설정
+                duration: 1000 // 애니메이션 지속 시간 (밀리초)
+            }
+        }
+    });
+    console.log("Success Rate Chart rendered.");
+}
+
+/**
+ * @AI_NOTE: Chart.js를 사용하여 장애 코드별 비율 차트를 렌더링하는 함수입니다.
+ * @param {Array<Object>} data - 차트 데이터 (예: [{error_code: 'CD902', count: 10}])
+ * @param {string} chartType - 'doughnut' 또는 'bar'
+ *
+ * @AI_DOCUMENTATION:
+ * 이 함수는 백엔드 API로부터 받은 원본 데이터를 Chart.js가 이해할 수 있는 형식으로 변환하여
+ * 장애 코드별 비율 차트(도넛 또는 바)를 렌더링합니다.
+ *
+ * 1.  **입력 데이터 형식 (백엔드 API 응답):**
+ * - `data` 매개변수는 다음과 같은 객체 배열입니다:
+ * ```json
+ * [
+ * { "error_code": "CD902", "count": 15 },
+ * { "error_code": "CD903", "count": 7 }
+ * ]
+ * ```
+ * - `error_code`: 장애 코드 (예: "CD902", "CD903").
+ * - `count`: 해당 장애 코드의 발생 횟수 (숫자).
+ *
+ * 2.  **데이터 변환 과정:**
+ * a.  **`labels` 생성:** 각 장애 코드(`item.error_code`)를 추출하여 차트의 라벨로 사용합니다.
+ * b.  **`counts` 생성:** 각 장애 코드의 발생 횟수(`item.count`)를 추출하여 차트의 데이터 값으로 사용합니다.
+ * c.  **`dynamicBackgroundColors`, `dynamicBorderColors` 생성:**
+ * - 기본 색상 팔레트(`DEFAULT_CHART_COLORS`)를 사용하여 각 데이터 섹션(도넛) 또는 바에 색상을 할당합니다.
+ * - 관리자 설정(`allAdminSettings`)에 장애 코드별 색상 설정이 있다면 해당 값을 사용할 수 있도록 확장성을 고려합니다 (현재는 기본 팔레트 사용).
+ * d.  **`datasets` 생성:**
+ * - 단일 데이터셋을 생성하며, `data` 속성에는 `counts` 배열을, `backgroundColor` 및 `borderColor`에는 동적으로 생성된 색상 배열을 할당합니다.
+ * - **`chartType`에 따른 `datalabels` 표시 여부:**
+ * - 사용자 요청에 따라, 이 차트(`renderTroublePieChart`)에서는 `datalabels`가 **항상 활성화**됩니다.
+ * - `datasets[0]` 내부와 `chartConfig.data.datasets[0]` (바 차트 조건문 내부)의 `datalabels` 속성이 모두 주석 해제되어 있습니다.
+ * - `formatter` 함수를 사용하여 도넛 차트에서는 백분율을, 바 차트에서는 건수를 표시합니다.
+ *
+ * 3.  **Chart.js 최종 데이터 구조:**
+ * `new Chart(ctx, { type: chartType, data: { labels: labels, datasets: [dataset] }, options: ... })` 형태로 Chart.js에 전달됩니다.
+ * `x`축 `type`은 바 차트의 경우 `'category'`로 고정되어 장애 코드를 범주형으로 처리합니다.
+ */
+function renderTroublePieChart(troubleCodeData, chartType, startDate, endDate) {
+    const ctx = document.getElementById('troublePieChart').getContext('2d');
+    const chartContainer = document.getElementById('troublePieChart').parentElement;
+    // 데이터가 없을 경우 메시지 표시
+    if (!troubleCodeData || troubleCodeData.length === 0) {
+        ctx.canvas.style.display = 'none';
+        let noDataMsg = document.getElementById('troublePieNoDataMsg');
+        if (!noDataMsg) {
+            noDataMsg = document.createElement('div');
+            noDataMsg.id = 'troublePieNoDataMsg';
+            noDataMsg.style.textAlign = 'center';
+            noDataMsg.style.color = '#888';
+            noDataMsg.style.fontSize = '1.1em';
+            noDataMsg.style.margin = '30px 0';
+            chartContainer.appendChild(noDataMsg);
+        }
+        let dateInfo = '';
+        if (startDate && endDate) {
+            dateInfo = ` (조회 기간: ${startDate} ~ ${endDate})`;
+        } else if (startDate) {
+            dateInfo = ` (조회 시작: ${startDate})`;
+        } else if (endDate) {
+            dateInfo = ` (조회 종료: ${endDate})`;
+        }
+        noDataMsg.textContent = '장애 코드 없음' + dateInfo;
+        return;
+    } else {
+        ctx.canvas.style.display = '';
+        const noDataMsg = document.getElementById('troublePieNoDataMsg');
+        if (noDataMsg) noDataMsg.remove();
+    }
+
+    // @AI_STEP_1: 차트 라벨(장애 코드)과 데이터 값(건수)을 추출합니다.
+    const labels = troubleCodeData.map(item => item.error_code || '알 수 없음');
+    const dataValues = troubleCodeData.map(item => item.count || 0);
+    const backgroundColors = troubleCodeData.map(item => errorCodeColorMap[item.error_code] || '#a3a3a3');
+
+    if (troublePieChart) {
+        troublePieChart.destroy();
+    }
+    troublePieChart = new Chart(ctx, {
+        type: chartType,
+        data: {
+            labels: labels,
+            datasets: [{
+                data: dataValues,
+                backgroundColor: backgroundColors,
+            }]
+        },
+        options: {
+            responsive: true,       // 컨테이너 크기에 따라 차트 크기 조절
+            maintainAspectRatio: false, // 차트의 가로세로 비율 유지 안 함
+            plugins: {
+                tooltip: { // 툴팁 설정
+                    callbacks: {
+                        label: function(context) {
+                            // 툴팁에 라벨, 건수, 백분율을 함께 표시합니다.
+                            let sum = 0;
+                            let dataArr = context.dataset.data;
+                            dataArr.map(data => {
+                                sum += data;
+                            });
+                            let percentage = (context.raw * 100 / sum).toFixed(2) + "%";
+                            return `${context.label}: ${context.raw}건 (${percentage})`;
+                        }
+                    }
+                },
+                legend: { // 범례 설정
+                    position: 'top', // 범례 위치
+                    labels: {
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map(function(label, i) {
+                                    // 각 범례 항목의 색상을 데이터셋의 배경색 배열에서 가져옵니다.
+                                    const backgroundColor = data.datasets[0].backgroundColor[i];
+                                    const borderColor = data.datasets[0].borderColor[i];
+                                   
+                                    // 범례 항목의 숨김 여부를 차트 메타데이터에서 확인합니다.
+                                    const meta = chart.getDatasetMeta(0); // 첫 번째 데이터셋 메타데이터
+                                    const isHidden = (meta.data[i] && meta.data[i].hidden) || !chart.isDatasetVisible(0);
+
+                                    return {
+                                        text: label, // 범례 텍스트 (예: "CD902")
+                                        fillStyle: backgroundColor, // 채우기 색상
+                                        strokeStyle: borderColor,   // 테두리 색상
+                                        lineWidth: 1, // 테두리 두께
+                                        hidden: isHidden, // 숨김 여부
+                                        index: i // 인덱스
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                title: { // 차트 제목 설정
+                    display: true,
+                    text: '장애 코드별 비율'
+                }
+            },
+            animation: { // 차트 애니메이션 설정
+                duration: 1000 // 애니메이션 지속 시간 (밀리초)
+            }
+        }
+    });
+    console.log("Trouble Pie Chart rendered.");
+}
+
+
+/**
+ * @AI_NOTE: 데이터의 최소/최대 날짜를 가져와 화면에 표시하는 함수입니다.
+ * @param {HTMLElement} minDateDisplayElement - 최소 날짜를 표시할 HTML 요소
+ * @param {HTMLElement} maxDateDisplayElement - 최대 날짜를 표시할 HTML 요소
+ */
+async function fetchAndDisplayMinMaxDatesAnalytics(minDateDisplayElement, maxDateDisplayElement) {
+    console.log("Fetching min/max dates from DB for analytics...");
+    dataFlowStatus.minMaxDatesFetch.apiCallInitiated = true;
+    try {
+        const dates = await fetchMinMaxDates(); // API 호출
+        dataFlowStatus.minMaxDatesFetch.apiResponseCount = dates ? 1 : 0;
+       
+        if (minDateDisplayElement && maxDateDisplayElement && dates) {
+            minDateDisplayElement.textContent = dates.min_date || 'N/A'; // 최소 날짜 표시
+            maxDateDisplayElement.textContent = dates.max_date || 'N/A'; // 최대 날짜 표시
+            console.log(`Min Date: ${dates.min_date}, Max Date: ${dates.max_date}`);
+            dataFlowStatus.minMaxDatesFetch.dataProcessedCount = 1;
+            dataFlowStatus.minMaxDatesFetch.apiCallSuccess = true;
+        } else {
+            console.error("minDateDisplay or maxDateDisplay element not found, or dates data is null.");
+            dataFlowStatus.minMaxDatesFetch.error = "Display elements not found or no date data.";
+            if(minDateDisplayElement) minDateDisplayElement.textContent = 'Error';
+            if(maxDateDisplayElement) maxDateDisplayElement.textContent = 'Error';
+        }
+    } catch (error) {
+        dataFlowStatus.minMaxDatesFetch.error = error.message;
+        console.error("Failed to fetch min/max dates for analytics:", error);
+        if(minDateDisplayElement) minDateDisplayElement.textContent = 'Error';
+        if(maxDateDisplayElement) maxDateDisplayElement.textContent = 'Error';
+        showMessage('최소/최대 날짜 로드 실패: ' + error.message, 'error');
+        throw error;
+    }
+}

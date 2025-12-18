@@ -1,0 +1,8 @@
+SELECT
+    MENU_ID,
+    MENU_NM,
+    MENU_URL
+FROM
+    TB_MENU
+ORDER BY
+    MENU_ORDER;

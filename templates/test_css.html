@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Test</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/tailwindcss.css') }}?v={{ now.timestamp() }}">
+</head>
+<body>
+    <h1 class="text-4xl text-blue-500 font-bold p-8">If this text is large and blue, the CSS is working.</h1>
+</body>
+</html>

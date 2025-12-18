@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}데이터 명세서 관리{% endblock %}
+
+{% block head %}
+    {{ super() }}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <!--<h1 class="text-3xl font-bold text-gray-800 mb-6">데이터 명세서 관리</h1>-->
+    {% include 'collapsible_controls.html' %}
+
+    <!-- 폐쇄망 전환으로 인한 기능 비활성화 처리 -->
+    <!--
+    <div id="url-scrape-card" class="collapsible-card bg-white rounded-lg shadow-md mb-6">
+        <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-700">공공데이터 포털 URL에서 명세서 가져오기</h2>
+            <span class="transform transition-transform duration-300">▼</span>
+        </div>
+        <div class="card-content px-6 pb-6">
+            <div class="flex space-x-2">
+                <input type="text" id="scrape-url-input" class="flex-grow p-2 border rounded-md" placeholder="https://www.data.go.kr/data/....">
+                <button id="scrape-btn" class="bg-indigo-600 text-white font-semibold py-2 px-5 rounded-md hover:bg-indigo-700">가져오기</button>
+            </div>
+            <p id="scrape-status" class="text-sm text-gray-500 mt-2"></p>
+        </div>
+    </div>
+
+    <div id="paste-content-card" class="collapsible-card bg-white rounded-lg shadow-md mb-6">
+        <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-700">붙여넣기로 명세서 분석하기</h2>
+            <span class="transform transition-transform duration-300">▼</span>
+        </div>
+        <div class="card-content px-6 pb-6">
+            <div class="flex flex-col space-y-2">
+                <textarea id="paste-content-input" class="w-full p-2 border rounded-md" rows="5" placeholder="분석할 웹페이지의 내용을 여기에 붙여넣으세요. (Ctrl+A, Ctrl+C 후 Ctrl+V)" maxlength="10000"></textarea>
+                <div id="charCounter" class="text-right text-sm text-gray-500 -mt-1">0 / 10000</div>
+                <button id="analyze-btn" class="bg-indigo-600 text-white font-semibold py-2 px-5 rounded-md hover:bg-indigo-700 self-end">분석하기</button>
+            </div>
+            <p id="analyze-status" class="text-sm text-gray-500 mt-2"></p>
+        </div>
+    </div>
+    -->
+    <!-- 메타데이터 불러오기 -->
+    <div id="metadata-import-card" class="collapsible-card bg-white rounded-lg shadow-md mb-6">
+        <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-700">메타데이터로 명세서 채우기</h2>
+            <span class="transform transition-transform duration-300">▼</span>
+        </div>
+        <div class="card-content px-6 pb-6">
+            <p class="text-sm text-gray-600 mb-4">
+                💡 공공데이터 포털의 파일데이터 상세 페이지 > 파일데이터 정보 > 메타데이터 다운로드에서 'schema.org(JSON)' 또는 'DCAT(RDF)'를 선택하여 메타데이터를 확인하거나 다운로드할 수 있습니다.
+            </p>
+            
+            <!-- 파일로 불러오기 -->
+            <div class="mb-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-2">파일로 불러오기</h3>
+                <div class="flex items-center space-x-2">
+                    <input type="file" id="metadata-file-input" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" accept=".json,.xml,.rdf">
+                    <button id="fill-from-file-btn" class="bg-indigo-600 text-white font-semibold py-2 px-5 rounded-md hover:bg-indigo-700">파일에서 채우기</button>
+                </div>
+            </div>
+
+            <!-- 붙여넣기로 불러오기 -->
+            <div>
+                <h3 class="text-lg font-medium text-gray-800 mb-2">붙여넣기로 불러오기</h3>
+                <div class="flex flex-col space-y-2">
+                    <textarea id="metadata-text-input" class="w-full p-2 border rounded-md" rows="8" placeholder="여기에 JSON 또는 RDF/XML 메타데이터 내용을 붙여넣으세요."></textarea>
+                    <button id="fill-from-text-btn" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-md hover:bg-blue-700 self-end">텍스트에서 채우기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 명세서 목록 -->
+    <div id="spec-list-card" class="collapsible-card bg-white rounded-lg shadow-md">
+        <div class="card-header p-6 cursor-pointer flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-700">명세서 목록</h2>
+            <span class="transform transition-transform duration-300">▼</span>
+        </div>
+        <div class="card-content px-6 pb-6">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-4">
+                    <span id="spec-total-count" class="text-sm font-semibold text-gray-600 mr-4"></span>
+                    <div class="flex items-center gap-1">
+                        <label for="specSearch" class="text-sm text-gray-600">검색:</label>
+                        <input type="text" id="specSearch" placeholder="데이터명, 기관, 키워드 검색..." class="p-1 border border-gray-300 rounded text-sm w-64">
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <label for="specPageSize" class="text-sm text-gray-600">행 수:</label>
+                        <select id="specPageSize" class="p-1 border border-gray-300 rounded text-sm">
+                            <option value="10">10개</option>
+                            <option value="20">20개</option>
+                            <option value="50">50개</option>
+                            <option value="100">100개</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="add-new-btn" class="bg-green-600 text-white font-semibold py-2 px-5 rounded-md hover:bg-green-700 transition duration-300">
+                    수동으로 새로 등록
+                </button>
+            </div>
+            <table class="min-w-full bg-white">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-600">ID</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-600">데이터 명칭</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-600">제공 기관</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-600">키워드</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-600">등록일</th>
+                        <th class="py-3 px-4 text-left text-sm font-semibold text-gray-600">참조문서</th>
+                    </tr>
+                </thead>
+                <tbody id="spec-list-body">
+                    <!-- 데이터는 JS로 채워집니다 -->
+                </tbody>
+            </table>
+            <!-- 페이징 컨트롤 -->
+            <div id="specPagination" class="mt-4 flex justify-center items-center gap-2">
+                <!-- 페이징 버튼들이 여기에 동적으로 생성됩니다 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 상세 정보 모달 -->
+<div id="spec-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-start justify-center p-4 pt-12 z-50">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl" style="display: flex; flex-direction: column; max-height: 90vh;">
+        <div class="p-6 border-b relative flex-shrink-0">
+            <h2 class="text-2xl font-bold text-gray-800" id="modal-title">명세 상세 정보</h2>
+            <button id="close-modal-x-btn" class="absolute top-4 right-6 text-gray-500 hover:text-gray-800 text-3xl font-bold leading-none">&times;</button>
+        </div>
+        <div id="modal-content-body" class="p-6" style="overflow-y: auto; flex-grow: 1; min-height: 0;">
+            <form id="spec-form">
+                <input type="hidden" id="spec-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="data_name" class="block text-sm font-medium text-gray-700 mb-1">데이터 명칭</label>
+                        <input type="text" id="data_name" class="w-full p-2 border rounded-md">
+                        <p id="data-name-error" class="text-red-500 text-sm mt-1 hidden"></p>
+                    </div>
+                    <div>
+                        <label for="provider" class="block text-sm font-medium text-gray-700 mb-1">제공 기관</label>
+                        <input type="text" id="provider" class="w-full p-2 border rounded-md">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="api_url" class="block text-sm font-medium text-gray-700 mb-1">API URL</label>
+                        <input type="text" id="api_url" class="w-full p-2 border rounded-md">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="reference_doc_url" class="block text-sm font-medium text-gray-700 mb-1">참고 문서 URL</label>
+                        <div class="flex items-center">
+                            <input type="text" id="reference_doc_url" class="w-full p-2 border rounded-md" autocomplete="url">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">비밀번호 (삭제 시 필요)</label>
+                        <input type="password" id="password" class="w-full p-2 border rounded-md" placeholder="변경할 경우에만 입력" autocomplete="new-password">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="keywords" class="block text-sm font-medium text-gray-700 mb-1">키워드</label>
+                        <input type="text" id="keywords" class="w-full p-2 border rounded-md">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">상세 설명</label>
+                        <textarea id="description" rows="4" class="w-full p-2 border rounded-md"></textarea>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Scraped Data Preview Container -->
+            <div id="scraped-data-preview" class="hidden"></div>
+
+            <!-- Original Form Sections -->
+            <div id="form-sections">
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">요청 파라미터</h3>
+                <div id="request-params-container" class="mb-6"></div>
+
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">응답 파라미터</h3>
+                <div id="response-params-container"></div>
+            </div>
+        </div>
+        <div class="p-6 bg-gray-50 border-t flex justify-between items-center flex-shrink-0">
+            <div>
+                <span id="save-status" class="text-sm text-gray-500"></span>
+            </div>
+            <div class="flex space-x-4">
+                <button id="save-btn" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-md hover:bg-blue-700">저장 후 닫기</button>
+                <button id="delete-btn" class="bg-red-600 text-white font-semibold py-2 px-5 rounded-md hover:bg-red-700 hidden">삭제</button>
+                <button id="close-modal-btn" class="bg-gray-300 text-gray-800 font-semibold py-2 px-5 rounded-md hover:bg-gray-400">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 저장용 비밀번호 확인 모달 -->
+<div id="save-password-confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-60">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm">
+        <div class="p-6 border-b">
+            <h2 class="text-xl font-bold text-gray-800">비밀번호 설정</h2>
+        </div>
+        <div class="p-6">
+            <form onsubmit="return false;">
+                <input type="text" autocomplete="username" style="display:none">
+                <p class="mb-4 text-gray-600">저장 시 사용할 비밀번호를 입력하세요.</p>
+                <input type="password" id="save-password-input" class="w-full p-2 border rounded-md" placeholder="4자리 이상 입력" autocomplete="new-password">
+                <p id="save-password-error-msg" class="text-red-500 text-sm mt-2 hidden"></p>
+            </form>
+        </div>
+        <div class="p-4 bg-gray-50 border-t flex justify-end space-x-3">
+            <button id="confirm-save-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700">저장</button>
+            <button id="cancel-save-btn" class="bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-400">취소</button>
+        </div>
+    </div>
+</div>
+
+<!-- 삭제용 비밀번호 확인 모달 -->
+<div id="password-confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-60">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm">
+        <div class="p-6 border-b">
+            <h2 class="text-xl font-bold text-gray-800">비밀번호 확인</h2>
+        </div>
+        <div class="p-6">
+            <form onsubmit="return false;">
+                <input type="text" autocomplete="username" style="display:none">
+                <p class="mb-4 text-gray-600">삭제를 진행하려면 비밀번호를 입력하세요.</p>
+                <input type="password" id="password-confirm-input" class="w-full p-2 border rounded-md" placeholder="비밀번호" autocomplete="current-password">
+                <p id="password-error-msg" class="text-red-500 text-sm mt-2 hidden"></p>
+            </form>
+        </div>
+        <div class="p-4 bg-gray-50 border-t flex justify-end space-x-3">
+            <button id="confirm-delete-btn" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700">확인</button>
+            <button id="cancel-delete-btn" class="bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-400">취소</button>
+        </div>
+    </div>
+</div>
+
+<!-- URL 분석 결과 표시 및 매핑용 모달 -->
+<div id="url-analysis-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-100">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-full flex flex-col">
+        <!-- 모달 헤더 -->
+        <div class="p-6 border-b flex justify-between items-center">
+            <h2 class="text-2xl font-bold text-gray-800">URL 분석 결과 및 데이터 매핑</h2>
+            <button id="close-analysis-modal-btn" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+        </div>
+
+        <!-- 모달 컨텐츠 (이 부분에 분석 결과가 동적으로 채워집니다) -->
+        <div id="analysis-modal-content" class="p-6 flex-grow overflow-y-auto">
+            <!-- 자바스크립트가 여기에 분석 결과를 렌더링합니다. -->
+        </div>
+
+        <!-- 모달 푸터 -->
+        <div class="p-6 bg-gray-50 border-t flex justify-end space-x-4">
+            <button id="save-mapped-data-btn" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-md hover:bg-blue-700">선택한 정보로 명세서 채우기</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/pages/data_spec.js', v='1.4') }}"></script>
+{% endblock %}

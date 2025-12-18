@@ -1,0 +1,157 @@
+const mainContent = document.getElementById('main-content');
+
+async function fetchPage(url) {
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        if (response.redirected) {
+            window.location.href = response.url;
+            return null;
+        }
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return await response.text();
+    } catch (error) {
+        console.error('Failed to fetch page:', error);
+        mainContent.innerHTML = `<p class="text-red-500 text-center">Error loading page. Please try again.</p>`;
+        return null;
+    }
+}
+
+function executeScripts(container) {
+    const scripts = container.querySelectorAll("script");
+    scripts.forEach(script => {
+        const newScript = document.createElement("script");
+        for (const attr of script.attributes) {
+            newScript.setAttribute(attr.name, attr.value);
+        }
+        if (script.innerHTML) {
+            newScript.innerHTML = script.innerHTML;
+        }
+        document.head.appendChild(newScript);
+        if (!newScript.src) {
+            document.head.removeChild(newScript);
+        }
+    });
+}
+
+async function navigate(url) {
+    const pageUrl = new URL(url, window.location.origin);
+    const path = pageUrl.pathname;
+    console.log(`[Router] Navigating to path: ${path}`);
+
+    const html = await fetchPage(path);
+    if (html) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        const newContent = doc.querySelector('#main-content') || doc.body;
+
+        mainContent.innerHTML = newContent.innerHTML;
+        history.pushState({}, '', path);
+
+        executeScripts(mainContent);
+
+        console.log('[Router] Current MENU_DATA:', JSON.parse(JSON.stringify(window.MENU_DATA)));
+
+        // Find the corresponding menu item from the global MENU_DATA
+        const menuItem = window.MENU_DATA.find(item => item.menu_url === path);
+        console.log(`[Router] Found menuItem for path "${path}":`, menuItem);
+        
+        if (path === '/admin/mngr_sett') {
+            try {
+                const module = await import('./pages/mngr_sett.js');
+                if (module.init) {
+                    console.log(`[Router] Calling init() for mngr_sett`);
+                    module.init();
+                }
+            } catch (error) {
+                console.error(`[Router] CRITICAL: Failed to load or initialize module for mngr_sett:`, error);
+            }
+        } else if (menuItem && menuItem.menu_id) {
+            console.log(`[Router] Attempting to import module: ./pages/${menuItem.menu_id}.js`);
+            try {
+                // Dynamically import the module based on menu_id
+                const module = await import(`./pages/${menuItem.menu_id}.js`);
+                if (module.init) {
+                    console.log(`[Router] Calling init() for ${menuItem.menu_id}`);
+                    module.init();
+                } else if (typeof module.default === 'function') {
+                    console.log(`[Router] Calling default() for ${menuItem.menu_id}`);
+                    module.default();
+                } else {
+                    console.warn(`[Router] Module for ${menuItem.menu_id} loaded, but no init or default function found.`);
+                }
+            } catch (error) {
+                console.error(`[Router] CRITICAL: Failed to load or initialize module for ${menuItem.menu_id}:`, error);
+            }
+        } else if (path === '/' || path === '/dashboard') {
+            // Handle root path separately if needed
+            try {
+                const module = await import('./pages/dashboard.js');
+                if (module.initDashboard) {
+                    module.initDashboard();
+                }
+            } catch (error) {
+                console.error(`[Router] Failed to load or initialize dashboard module:`, error);
+            }
+        } else {
+            console.warn(`[Router] No menuItem found for path: ${path}`);
+        }
+
+
+        // Update the active navigation link
+        if (window.updateActiveNav) {
+            window.updateActiveNav();
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initial page load handler
+    const currentPath = window.location.pathname;
+    const menuItem = window.MENU_DATA.find(item => item.menu_url === currentPath);
+    
+    if (currentPath === '/admin/mngr_sett') {
+        import('./pages/mngr_sett.js')
+            .then(module => {
+                if (module.init) module.init();
+            })
+            .catch(error => console.error(`Initial load failed for mngr_sett:`, error));
+    } else if (menuItem && menuItem.menu_id) {
+        import(`./pages/${menuItem.menu_id}.js`)
+            .then(module => {
+                if (module.init) module.init();
+                else if (typeof module.default === 'function') module.default();
+            })
+            .catch(error => console.error(`Initial load failed for ${menuItem.menu_id}:`, error));
+    } else if (currentPath === '/' || currentPath === '/dashboard') {
+        import('./pages/dashboard.js')
+            .then(module => {
+                if (module.initDashboard) module.initDashboard();
+            })
+            .catch(error => console.error(`Initial load failed for dashboard:`, error));
+    }
+
+
+    // 모든 nav-link 클래스를 가진 a 태그에 직접 이벤트 리스너를 추가합니다.
+    document.querySelectorAll('a.nav-link').forEach(link => {
+        // 외부 링크(target="_blank")는 제외합니다.
+        if (link.target === '_blank') {
+            return;
+        }
+
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            console.log(`[Router Event] Link clicked: ${link.href}`);
+            navigate(link.href);
+        });
+    });
+
+    window.addEventListener('popstate', () => {
+        navigate(window.location.href);
+    });
+});

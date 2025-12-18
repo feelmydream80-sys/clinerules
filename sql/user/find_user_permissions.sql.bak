@@ -1,0 +1,12 @@
+-- 관리자 권한 확인
+SELECT 'admin' AS menu_id
+FROM tb_user
+WHERE user_id = %s AND is_admin = TRUE
+
+UNION ALL
+
+-- 일반 메뉴 권한 확인
+SELECT a.menu_id
+FROM tb_user_auth_ctrl a
+JOIN tb_user b ON a.user_id = b.user_id
+WHERE a.user_id = %s AND a.auth_yn = TRUE;

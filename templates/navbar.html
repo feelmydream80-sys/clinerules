@@ -1,0 +1,43 @@
+<nav class="bg-blue-800 p-4 shadow-md sticky top-0 z-50">
+    <div class="container mx-auto flex items-center justify-between">
+        <span class="text-white text-2xl font-bold">수집 현황 대시보드</span>
+        
+        <div class="flex items-center space-x-2">
+            {# --- 메뉴 링크 --- #}
+            {% if g.user and g.user.permissions and menu_items %}
+                {% for item in menu_items %}
+                    {% if item.menu_id in g.user.permissions %}
+                        <a href="{{ item.menu_url }}" 
+                           class="nav-link text-white hover:bg-blue-700 px-1 py-2 rounded-md transition duration-300 font-medium"
+                           {% if item.is_external %}target="_blank"{% endif %}>
+                           {{ item.menu_nm }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            {# --- 로그인/로그아웃 버튼 --- #}
+            <div class="ml-4">
+                {% if g.user %}
+                    <div class="relative" id="user-menu-container">
+                        <button id="user-menu-button" class="flex items-center text-white focus:outline-none bg-blue-700 px-3 py-2 rounded-md">
+                            <div class="flex flex-col items-center">
+                                <span class="whitespace-nowrap">환영합니다, {{ g.user.user_id }}님</span>
+                                <span id="session-timer" class="text-xs text-gray-300"></span>
+                            </div>
+                            <svg class="h-5 w-5 ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg p-2 z-50">
+                            <a href="{{ url_for('auth.change_password') }}" class="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white px-1 py-2 rounded-md transition duration-300 font-medium whitespace-nowrap mb-2">비밀번호 변경</a>
+                            <a href="{{ url_for('auth.logout') }}" class="block w-full text-center bg-red-500 hover:bg-red-600 text-white px-1 py-2 rounded-md transition duration-300 font-medium whitespace-nowrap">로그아웃</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="nav-link bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md transition duration-300 font-medium">로그인</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>

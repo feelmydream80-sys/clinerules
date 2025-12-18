@@ -1,0 +1,9 @@
+-- sql/icon/update_icon.sql
+UPDATE TB_ICON
+SET
+    ICON_CD = %(ICON_CD)s,
+    ICON_NM = %(ICON_NM)s,
+    ICON_EXPL = %(ICON_EXPL)s,
+    ICON_DSP_YN = %(ICON_DSP_YN)s
+WHERE
+    ICON_ID = %(ICON_ID)s;

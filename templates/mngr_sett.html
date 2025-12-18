@@ -1,0 +1,1141 @@
+{% extends "base.html" %}
+
+{% block title %}관리자 설정{% endblock %}
+
+{% block head %}
+{% endblock %}
+
+{% block content %}
+    <style>
+        /* General container styles, consistent with dashboard/analytics */
+        #mngr_sett_page .container {
+            max-width: 1600px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 1rem; /* p-4 */
+        }
+
+        #mngr_sett_page .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        #mngr_sett_page .rounded-lg {
+            border-radius: 0.5rem;
+        }
+
+        /* Main page title style, consistent with dashboard/analytics */
+        #mngr_sett_page .page-title {
+            color: #2c3e50;
+            margin-top: 20px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 700;
+            text-align: center; /* Admin page title remains centered for prominence */
+        }
+
+        /* Section wrapper style, consistent with dashboard/analytics */
+        #mngr_sett_page .content-section {
+            background-color: #ffffff;
+            padding: 24px; /* p-6 */
+            border-radius: 8px; /* rounded-lg */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* shadow-md */
+            margin-bottom: 24px; /* mb-6 */
+        }
+
+        /* Styles specific to admin_settings.css, adapted to new layout */
+        #mngr_sett_page .icon-examples {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #e8f5e9; /* Light green background */
+            border-radius: 8px;
+            border: 1px solid #c8e6c9;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            font-size: 1.1em;
+        }
+
+        #mngr_sett_page .icon-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            background-color: #dcedc8;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        #mngr_sett_page .chart-container {
+            position: relative;
+            height: 400px; /* Fixed height for charts */
+            width: 100%;
+        }
+
+        #mngr_sett_page #messageContainer {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            box-sizing: border-box;
+        }
+
+        #mngr_sett_page .message {
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            min-width: 300px;
+        }
+
+        #mngr_sett_page .message.info { background-color: #e0f7fa; color: #007bff; }
+        #mngr_sett_page .message.success { background-color: #e6ffe6; color: #28a745; }
+        #mngr_sett_page .message.error { background-color: #ffe6e6; color: #dc3545; }
+
+        #mngr_sett_page .message.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #mngr_sett_page .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        #mngr_sett_page .tab-button {
+            background-color: #f8f8f8;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 15px 25px;
+            transition: 0.3s;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #555;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            margin-right: 5px;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+        }
+
+        #mngr_sett_page .tab-button:hover {
+            background-color: #e9e9e9;
+        }
+
+        #mngr_sett_page .tab-button.active {
+            background-color: #ffffff;
+            border-bottom: 3px solid #007bff;
+            color: #007bff;
+            box-shadow: none;
+        }
+
+        #mngr_sett_page .tab-content {
+            display: none;
+            padding-top: 20px; /* Adjusted to fit the new content-section padding */
+            border-top: none;
+        }
+
+        #mngr_sett_page .tab-content.active {
+            display: block;
+        }
+
+        /* Settings Table Specific Styles */
+        #mngr_sett_page .table-responsive {
+            overflow-x: auto; /* 가로 스크롤 허용 */
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+        }
+
+        #mngr_sett_page #chartSettings .settings-table input[type="color"] {
+            width: 60px; /* 너비를 고정값으로 설정 */
+            min-width: 40px; /* 최소 너비 설정 */
+            padding: 2px;
+        }
+
+        #mngr_sett_page .settings-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1600px; /* 테이블 최소 너비 설정 (컬럼 수에 따라 조정) */
+        }
+
+        /* 차트 설정 테이블은 컬럼이 적으므로 최소 너비 제한을 두지 않음 */
+        #mngr_sett_page .chart-settings-table,
+        #mngr_sett_page .data-permission-table {
+            min-width: auto;
+        }
+
+        #mngr_sett_page .settings-table th, #mngr_sett_page .settings-table td {
+            border: 1px solid #e0e0e0;
+            padding: 10px 8px;
+            text-align: center;
+            white-space: nowrap; /* 셀 내용이 줄바꿈되지 않도록 */
+            font-size: 0.9em;
+        }
+
+        #mngr_sett_page .settings-table thead th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #444;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        #mngr_sett_page .settings-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        #mngr_sett_page .settings-table tbody tr:hover {
+            background-color: #eef;
+        }
+
+        #mngr_sett_page .settings-table input[type="number"],
+        #mngr_sett_page .settings-table input[type="text"],
+        #mngr_sett_page .settings-table select {
+            width: 100%; /* 셀 너비에 맞춤 */
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.9em;
+        }
+
+        #mngr_sett_page .settings-table input[type="color"] {
+            width: 100%; /* 셀 너비에 맞춤 */
+            height: 30px;
+            padding: 2px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        #mngr_sett_page .settings-table input[type="checkbox"] {
+            transform: scale(1.2);
+            accent-color: #28a745;
+        }
+
+        #mngr_sett_page .settings-table td.job-id-cell {
+            font-weight: bold;
+            background-color: #eef;
+        }
+
+        /* Form Actions */
+        #mngr_sett_page .form-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 25px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        #mngr_sett_page .form-actions button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        #mngr_sett_page .form-actions .save { background-color: #007bff; color: white; }
+        #mngr_sett_page .form-actions .save:hover { background-color: #0056b3; transform: translateY(-2px); }
+        #mngr_sett_page .form-actions .reset { background-color: #ffc107; color: #333; }
+        #mngr_sett_page .form-actions .reset:hover { background-color: #e0a800; transform: translateY(-2px); }
+        #mngr_sett_page .form-actions .export { background-color: #17a2b8; color: white; }
+        #mngr_sett_page .form-actions .export:hover { background-color: #138496; transform: translateY(-2px); }
+
+        /* Import Section */
+        #mngr_sett_page .import-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #f0f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #d0e8ff;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        #mngr_sett_page .import-section label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        #mngr_sett_page .import-section input[type="file"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #b3e0ff;
+            border-radius: 5px;
+            background-color: #fff;
+            min-width: 150px;
+        }
+
+        #mngr_sett_page .import-section .import {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        #mngr_sett_page .import-section .import:hover {
+            background-color: #218838;
+        }
+
+        /* Icon Management Specific Styles */
+        #mngr_sett_page .icon-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+            align-items: flex-end; /* 버튼을 하단에 정렬 */
+        }
+
+        #mngr_sett_page .icon-form .form-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1; /* 유연한 너비 */
+            min-width: 150px; /* 최소 너비 설정 */
+        }
+
+        #mngr_sett_page .icon-form .form-group label {
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #444;
+        }
+
+        #mngr_sett_page .icon-form input[type="text"],
+        #mngr_sett_page .icon-form input[type="number"],
+        #mngr_sett_page .icon-form textarea,
+        #mngr_sett_page .icon-form select { /* select도 추가 */
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+
+        #mngr_sett_page .icon-form textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        #mngr_sett_page .icon-form button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            margin-top: 20px; /* 입력 필드와 버튼 사이 간격 */
+        }
+
+        #mngr_sett_page .icon-form .add-icon { background-color: #007bff; color: white; }
+        #mngr_sett_page .icon-form .add-icon:hover { background-color: #0056b3; }
+        #mngr_sett_page .icon-form .update-icon { background-color: #28a745; color: white; }
+        #mngr_sett_page .icon-form .update-icon:hover { background-color: #218838; }
+        #mngr_sett_page .icon-form .cancel-edit { background-color: #6c757d; color: white; }
+        #mngr_sett_page .icon-form .cancel-edit:hover { background-color: #5a6268; }
+
+
+        #mngr_sett_page .icon-management-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            min-width: 700px; /* 아이콘 테이블 최소 너비 */
+        }
+
+        #mngr_sett_page .icon-management-table th, #mngr_sett_page .icon-management-table td {
+            border: 1px solid #ddd;
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        #mngr_sett_page .icon-management-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        #mngr_sett_page .icon-management-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        #mngr_sett_page .icon-management-table tbody tr:hover {
+            background-color: #eef;
+        }
+
+        #mngr_sett_page .icon-management-table .action-buttons button {
+            padding: 5px 10px;
+            margin: 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background-color 0.2s ease;
+        }
+
+        #mngr_sett_page .icon-management-table .edit-btn { background-color: #007bff; color: white; }
+        #mngr_sett_page .icon-management-table .edit-btn:hover { background-color: #0056b3; }
+        #mngr_sett_page .icon-management-table .save-btn { background-color: #28a745; color: white; }
+        #mngr_sett_page .icon-management-table .save-btn:hover { background-color: #218838; }
+        #mngr_sett_page .icon-management-table .cancel-btn { background-color: #6c757d; color: white; }
+        #mngr_sett_page .icon-management-table .cancel-btn:hover { background-color: #5a6268; }
+        #mngr_sett_page .icon-management-table .delete-btn { background-color: #dc3545; color: white; }
+        #mngr_sett_page .icon-management-table .delete-btn:hover { background-color: #c82333; }
+
+        #mngr_sett_page .icon-actions {
+            justify-content: flex-end; /* 아이콘 내보내기/가져오기 버튼 오른쪽 정렬 */
+        }
+
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            /* .admin-container class is removed, styles are applied to .container and .content-section */
+            #mngr_sett_page .page-title {
+                font-size: 2em;
+            }
+            #mngr_sett_page .tab-button {
+                padding: 12px 18px;
+                font-size: 1em;
+            }
+            #mngr_sett_page .settings-table, #mngr_sett_page .icon-management-table {
+                min-width: unset; /* 모바일에서 최소 너비 제한 해제 */
+            }
+            #mngr_sett_page .settings-table th, #mngr_sett_page .settings-table td,
+            #mngr_sett_page .icon-management-table th, #mngr_sett_page .icon-management-table td {
+                padding: 8px 5px;
+                font-size: 0.8em;
+            }
+            #mngr_sett_page .settings-table input, #mngr_sett_page .settings-table select,
+            #mngr_sett_page .icon-form input, #mngr_sett_page .icon-form textarea {
+                padding: 5px;
+            }
+            #mngr_sett_page .form-actions, #mngr_sett_page .import-section, #mngr_sett_page .icon-form {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            #mngr_sett_page .form-actions button, #mngr_sett_page .import-section button, #mngr_sett_page .icon-form button {
+                width: 100%;
+                box-sizing: border-box;
+            }
+            #mngr_sett_page .import-section input[type="file"] {
+                width: 100%;
+            }
+            #mngr_sett_page .icon-form .form-group {
+                width: 100%;
+                min-width: unset;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #mngr_sett_page .icon-examples {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                font-size: 1em;
+            }
+            #mngr_sett_page .icon-item {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        /* Hexagon Color Palette Styles */
+        .color-palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .color-square {
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .color-square:hover {
+            transform: scale(1.1);
+            border: 1px solid #007bff;
+        }
+
+        .color-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .color-input-wrapper input[type="color"] {
+            padding-left: 35px; /* Make space for the preview */
+        }
+
+        .color-preview {
+            position: absolute;
+            left: 5px;
+            width: 25px;
+            height: 25px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            pointer-events: none; /* Make it non-interactive */
+        }
+
+        /* Border Style Selector Styles */
+        .border-style-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .border-style-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 5px;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            transition: border-color 0.2s;
+        }
+        .border-style-option input[type="radio"] {
+            display: none; /* Hide the actual radio button */
+        }
+        .border-style-option .border-symbol {
+            font-size: 1.5em;
+            color: #333;
+            padding: 0 10px;
+            letter-spacing: -2px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            width: 50px;
+            text-align: center;
+        }
+        .border-style-option span {
+            margin-top: 5px;
+            font-size: 0.8em;
+        }
+        .border-style-option input[type="radio"]:checked ~ .border-symbol {
+            border: 2px solid #007bff;
+            color: #007bff;
+        }
+        .border-style-option input[type="radio"]:checked ~ span {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        /* Data Access Permission Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1050;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 25px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 960px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .modal-header {
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .close-button {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        .modal-body {
+            padding-top: 20px;
+        }
+
+        .permission-section {
+            display: flex;
+            gap: 20px;
+        }
+
+        .permission-box {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+        }
+
+        .permission-box h4 {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+
+        .permission-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .permission-list li {
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .permission-list li:hover {
+            background-color: #f0f0f0;
+        }
+        
+        #dataPermissionModal .permission-list li.selected {
+            background-color: #d4edda; /* Light green */
+            color: #155724;
+        }
+
+        .permission-controls {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .permission-controls button {
+            padding: 8px 12px;
+            font-size: 1.2em;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .permission-controls button:hover {
+            background-color: #e2e6ea;
+        }
+
+        .modal-footer {
+            padding-top: 20px;
+            border-top: 1px solid #e5e5e5;
+            text-align: right;
+            margin-top: 20px;
+        }
+        
+        .modal-footer button {
+             padding: 10px 20px;
+        }
+    </style>
+    <div id="mngr_sett_page" class="container mx-auto p-4">
+        <h1 class="page-title">관리자 설정</h1>
+
+        <!-- Icon Examples Section (Wrapped in content-section) -->
+        <div class="content-section">
+            <div class="icon-examples">
+                <strong>아이콘 예시:</strong>
+                <div class="icon-item"><strong>✅</strong> 성공</div>
+                <div class="icon-item"><strong>❌</strong> 실패</div>
+                <div class="icon-item"><strong>⚠️</strong> 경고</div>
+                <div class="icon-item"><strong>ℹ️</strong> 정보</div>
+                <div class="icon-item"><strong>⚙️</strong> 처리 중</div>
+                <div class="icon-item"><strong>▶️</strong> 시작</div>
+                <div class="icon-item"><strong>⏹️</strong> 중지</div>
+                <div class="icon-item"><strong>⏳</strong> 대기</div>
+                <div class="icon-item"><strong>📊</strong> 차트</div>
+                <div class="icon-item"><strong>🔔</strong> 알림</div>
+                <div class="icon-item"><strong>✨</strong> 완료</div>
+                <div class="icon-item"><strong>🛠️</strong> 유지보수</div>
+                <div class="icon-item"><strong>🚫</strong> 금지</div>
+            </div>
+        </div>
+
+        <!-- Message Container (Moved outside content-section to maintain sticky behavior) -->
+        <div id="messageContainer">
+            <div class="message" id="messageArea"></div>
+        </div>
+
+        <!-- Tabbed Content Section (Wrapped in content-section) -->
+        <div class="content-section">
+            <div class="tabs">
+                <button class="tab-button active" data-tab="basicSettings">기본 설정</button>
+                <button class="tab-button" data-tab="scheduleSettings">수집 스케줄 설정</button>
+                <button class="tab-button" data-tab="iconManagement">Icon 관리</button>
+                <button class="tab-button" data-tab="chartSettings">차트/시각화 설정</button>
+                <button class="tab-button" data-tab="userManagement">사용자 관리</button>
+                <button class="tab-button" data-tab="dataAccessPermission">데이터 접근 권한</button>
+                <button class="tab-button" data-tab="statistics">통계</button>
+            </div>
+
+
+            <div id="basicSettings" class="tab-content active">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Job ID별 기본 설정</h2>
+                    <button id="addRowBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow-sm transition duration-300 ease-in-out">
+                        행 추가
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="settings-table">
+                        <colgroup>
+                            <col style="width: 3%;"> {# Job ID #}
+                            <col style="width: 5%;"> {# Job 이름 #}
+                            <col style="width: 8%;"> {# Job 설명 #}
+                            <col style="width: 5%;"> {# 비고 #}
+                            <col style="width: 2%;"> {# 실패(CNT) #}
+                            <col style="width: 3.5%;"> {# 실패(Icon) #}
+                            <col style="width: 2%;"> {# 실패(Color) #}
+                            <col style="width: 2%;"> {# 경고(CNT) #}
+                            <col style="width: 3.5%;"> {# 경고(Icon) #}
+                            <col style="width: 2%;"> {# 경고(Color) #}
+                            <col style="width: 3.5%;"> {# 정상(Icon) #}
+                            <col style="width: 2%;"> {# 정상(Color) #}
+                            <col style="width: 2%;"> {# 일간 임계값 #}
+                            <col style="width: 3%;"> {# 주간 임계값 #}
+                            <col style="width: 3%;"> {# 월간 임계값 #}
+                            <col style="width: 3%;"> {# 반기 임계값 #}
+                            <col style="width: 3%;"> {# 연간 임계값 #}
+                            <col style="width: 3.5%;"> {# 성공 아이콘 #}
+                            <col style="width: 2%;"> {# 성공 색상 #}
+                            <col style="width: 3.5%;"> {# 경고 아이콘 #}
+                            <col style="width: 2%;"> {# 경고 색상 #}
+                            <col style="width: 3%;"> {# 대시보드 표시 여부 #}
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th rowspan="2">Job ID</th>
+                                <th rowspan="2">Job 이름</th>
+                                <th rowspan="2">Job 설명</th>
+                                <th rowspan="2">비고</th>
+                                <th colspan="8">연속 실패시 표시방법</th>
+                                <th colspan="9">성공률 기준 임계치 설정 (기간별)</th>
+                                <th rowspan="2">대시보드 표시 여부</th> {# 대시보드 표시 여부 헤더 #}
+                            </tr>
+                            <tr>
+                                <th>실패(CNT) </th>
+                                <th>실패(Icon)</th>
+                                <th>실패(Color)</th>
+                                <th>경고(CNT)</th>
+                                <th>경고(Icon)</th>
+                                <th>경고(Color)</th>
+                                <th>정상(Icon)</th>
+                                <th>정상(Color)</th>
+                                <th>일간 임계값</th>
+                                <th>주간 임계값</th>
+                                <th>월간 임계값</th>
+                                <th>반기 임계값</th>
+                                <th>연간 임계값</th>
+                                <th>성공 아이콘</th>
+                                <th>성공 색상</th>
+                                <th>경고 아이콘</th>
+                                <th>경고 색상</th>
+                            </tr>
+                        </thead>
+                        <tbody id="settingsTableBody">
+                            <!-- 설정 데이터가 여기에 로드됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-6">
+                    <h4 class="text-md font-semibold text-gray-700 mb-2">컬러 팔레트</h4>
+                    <div id="basicSettingsColorPaletteContainer">
+                        <!-- Palette will be inserted here by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button id="saveBasicSettingsBtn" class="save">기본 설정 저장</button>
+                    <button id="exportSettingsBtn" class="export">설정 내보내기 (JSON)</button>
+                    <div class="import-section">
+                        <label for="importFile">JSON 파일 선택:</label>
+                        <input type="file" id="importFile" accept=".json" />
+                        <button id="importSettingsBtn" class="import">설정 가져오기 (JSON)</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="scheduleSettings" class="tab-content">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">수집 스케줄 표시 설정</h2>
+                <div id="scheduleSettingsForm" class="space-y-6">
+                    <!-- 데이터가 여기에 동적으로 채워집니다. -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="grp_prgs_icon_id" class="block text-sm font-medium text-gray-700">그룹 진행률 아이콘</label>
+                            <select id="grp_prgs_icon_id" name="grp_prgs_icon_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <!-- 아이콘 옵션이 여기에 동적으로 채워집니다. -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="grp_sucs_icon_id" class="block text-sm font-medium text-gray-700">그룹 성공률 아이콘</label>
+                            <select id="grp_sucs_icon_id" name="grp_sucs_icon_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <!-- 아이콘 옵션이 여기에 동적으로 채워집니다. -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions mt-6">
+                    <button class="save" id="saveScheduleSettingsBtn">스케줄 표시 설정 저장</button>
+                </div>
+            </div>
+
+            <div id="iconManagement" class="tab-content">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">Icon 관리</h2>
+                <div class="icon-form">
+                    <input type="hidden" id="iconId">
+                    <div class="form-group" style="flex: 0.5;">
+                        <label for="iconCode">아이콘 코드</label>
+                        <input type="text" id="iconCode" placeholder="예: ✅" required>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label for="iconName">아이콘 이름</label>
+                        <input type="text" id="iconName" placeholder="예: 성공" required>
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label for="iconDescription">설명 (선택 사항)</label>
+                        <textarea id="iconDescription" placeholder="아이콘에 대한 설명"></textarea>
+                    </div>
+                    <div class="form-group" style="flex: 0.5;">
+                        <label for="iconDisplayYn">표시 여부</label>
+                        <select id="iconDisplayYn">
+                            <option value="Y">Y</option>
+                            <option value="N">N</option>
+                        </select>
+                    </div>
+                    <button class="add-icon" id="saveIconBtn">아이콘 추가</button>
+                    <button class="cancel-edit" id="cancelIconEditBtn" style="display:none;">취소</button>
+                </div>
+
+                <table class="icon-management-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 8%;">ID</th>
+                            <th style="width: 12%;">아이콘</th>
+                            <th style="width: 15%;">이름</th>
+                            <th style="width: 35%;">설명</th>
+                            <th style="width: 8%;">표시 여부</th>
+                            <th style="width: 12%;">작업</th>
+                        </tr>
+                    </thead>
+                    <tbody id="iconTableBody">
+                        <!-- 아이콘 데이터가 여기에 로드됩니다 -->
+                    </tbody>
+                </table>
+
+                <div class="form-actions icon-actions">
+                    <button id="exportIconsBtn" class="export">아이콘 내보내기 (CSV)</button>
+                    <div class="import-section">
+                        <label for="importIconsFile">CSV 파일 선택:</label>
+                        <input type="file" id="importIconsFile" accept=".csv" />
+                        <button id="importIconsBtn" class="import">아이콘 가져오기 (CSV)</button>
+                    </div>
+                </div>
+            </div>
+
+
+            <div id="chartSettings" class="tab-content">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">차트/시각화 설정</h2>
+                <div class="table-responsive">
+                    <table class="settings-table chart-settings-table">
+                        <colgroup>
+                            <col style="width: 15%;">
+                            <col style="width: 25%;">
+                            <col style="width: 20%;">
+                            <col style="width: 20%;">
+                            <col style="width: 20%;">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Job ID</th>
+                                <th>Job 이름</th>
+                                <th>차트 색상</th>
+                                <th>잔디 시작 색상</th>
+                                <th>잔디 끝 색상</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chartSettingsTableBody">
+                            <!-- 차트/시각화 설정 데이터가 여기에 로드됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="form-actions">
+                    <button id="saveChartSettingsBtn" class="save">차트 설정 저장</button>
+                </div>
+            </div>
+
+            <div id="userManagement" class="tab-content">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">사용자 관리</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-sm text-gray-600">* '관리자'는 모든 메뉴 접근 권한을 가지며, 사용자 승인 및 권한 변경이 가능합니다.<br>'관리자 설정' 메뉴 접근 권한을 부여하면 관리자로 간주됩니다.</p>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="userSearchInput" placeholder="사용자 ID 검색..." class="border p-2 rounded-md shadow-sm">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="settings-table">
+                        <thead>
+                            <tr>
+                                <th>사용자 ID</th>
+                                <th>상태</th>
+                                <th>가입일</th>
+                                <th id="menuPermissionsHeader">메뉴 권한</th>
+                                <th>작업</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody">
+                            <!-- 사용자 데이터가 여기에 로드됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="form-actions">
+                    <button id="saveAllPermissionsBtn" class="save">사용자 권한 저장</button>
+                </div>
+            </div>
+
+            <div id="dataAccessPermission" class="tab-content">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">데이터 접근 권한 관리</h2>
+                <div class="flex justify-end items-center mb-4">
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="dataUserSearchInput" placeholder="사용자 ID 검색..." class="border p-2 rounded-md shadow-sm">
+                        <button id="dataUserSearchBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md shadow-sm">검색</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="settings-table data-permission-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">사용자 ID</th>
+                                <th style="width: 20%;">상태</th>
+                                <th style="width: 40%;">허용된 Job ID</th>
+                                <th style="width: 20%;">작업</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataPermissionUserTableBody">
+                            <!-- 사용자 데이터가 여기에 로드됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="statistics" class="tab-content">
+                <!-- Filters -->
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
+                    <h2 class="text-xl font-semibold text-gray-700">접속 통계</h2>
+                    <div class="flex items-center gap-4 flex-wrap">
+                        <!-- View Type Radio Buttons -->
+                        <div class="flex items-center gap-2">
+                            <input type="radio" name="statsViewType" id="dailyViewRadio" value="daily" checked>
+                            <label for="dailyViewRadio">일별 현황</label>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="radio" name="statsViewType" id="weeklyMonthlyViewRadio" value="weekly_monthly">
+                            <label for="weeklyMonthlyViewRadio">주별/월별 현황</label>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="radio" name="statsViewType" id="comparisonViewRadio" value="comparison">
+                            <label for="comparisonViewRadio">비교 현황</label>
+                        </div>
+                        
+                        <!-- Year and Menu Selectors -->
+                        <select id="statsYearSelect" class="border p-2 rounded"></select>
+                        <select id="statsMenuSelect" class="border p-2 rounded"></select>
+
+                        <!-- Date Range for Daily View -->
+                        <div id="statsDateRangeContainer" class="flex items-center gap-2">
+                            <input type="date" id="statsStartDate" class="border p-2 rounded">
+                        </div>
+
+                        <button id="statsExcelDownloadBtn" class="bg-green-500 text-white px-4 py-2 rounded">엑셀 다운로드</button>
+                    </div>
+                </div>
+
+                <!-- Daily View Container -->
+                <div id="dailyViewContainer">
+                    <div id="statsSummary" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <!-- Summary data will be loaded here -->
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2">메뉴별 접속 현황</h3>
+                        <div class="table-responsive">
+                            <table class="settings-table" style="min-width: auto; width: 25%;">
+                                <colgroup>
+                                    <col style="width: 10%;">
+                                    <col style="width: 7.5%;">
+                                    <col style="width: 7.5%;">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>메뉴</th>
+                                        <th>총 접속 횟수</th>
+                                        <th>순 방문자 수</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="menuStatsTableBody">
+                                    <!-- Daily menu stats will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weekly/Monthly View Container -->
+                <div id="weeklyMonthlyViewContainer" style="display: none;">
+                    <h3 class="text-lg font-semibold mb-2">주별/월별 접속 현황</h3>
+                    <div class="table-responsive">
+                        <table class="settings-table" id="weeklyMonthlyStatsTable" style="width: 100%; min-width: auto;">
+                            <thead>
+                                <!-- Header will be generated by JS -->
+                            </thead>
+                            <tbody>
+                                <!-- Body will be generated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Comparison View Container -->
+                <div id="comparisonViewContainer" style="display: none;">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-lg font-semibold">전년 동기 대비 접속 현황</h3>
+                        <span id="comparisonYearLegend" class="text-sm text-gray-600"></span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="settings-table" id="comparisonStatsTable" style="width: 100%; min-width: auto;">
+                            <thead>
+                                <!-- JS를 통해 동적으로 채워짐 -->
+                            </thead>
+                            <tbody>
+                                <!-- JS를 통해 동적으로 채워짐 -->
+                            </tbody>
+                            <tfoot>
+                                <!-- JS를 통해 동적으로 채워짐 -->
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Chart Container -->
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold mb-2">접속 통계 차트</h3>
+                    <div class="chart-container">
+                        <canvas id="accessStatsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Data Access Permission Modal -->
+    <div id="dataPermissionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">데이터 접근 권한 설정: <span id="dataPermissionModalTitle"></span></h3>
+                <span class="close-button" id="closePermissionModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="permission-section">
+                    <div class="permission-box">
+                        <h4>미할당 Job ID</h4>
+                        <input type="text" id="unassignedJobSearchInput" placeholder="Job ID 또는 이름 검색..." class="w-full p-2 mb-2 border rounded-md shadow-sm">
+                        <ul id="unassignedJobs" class="permission-list">
+                            <!-- 미할당 Job ID가 여기에 로드됩니다 -->
+                        </ul>
+                    </div>
+                    <div class="permission-controls">
+                        <button id="addJobPermission">></button>
+                        <button id="removeJobPermission"><</button>
+                    </div>
+                    <div class="permission-box">
+                        <h4>할당된 Job ID</h4>
+                        <ul id="assignedJobs" class="permission-list">
+                            <!-- 할당된 Job ID가 여기에 로드됩니다 -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="savePermissionChangesBtn" class="save">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 로딩 오버레이 -->
+    <div id="adminLoadingOverlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
+            <svg class="animate-spin h-10 w-10 text-blue-500 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-gray-700 font-semibold">데이터를 로드하는 중입니다...</p>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <!-- XLSX Library for Excel Export -->
+    <script src="{{ url_for('static', filename='vendor/js/xlsx.full.min.js') }}"></script>
+    <!-- Custom JavaScript -->
+    <script type="module">
+        import { init } from '/static/js/pages/mngr_sett.js';
+        init();
+    </script>
+{% endblock %}

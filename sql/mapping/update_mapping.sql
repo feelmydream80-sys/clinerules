@@ -1,0 +1,1 @@
+UPDATE TB_COL_MAPP SET BF_TBL_NM = %(bf_tbl_nm)s, BF_COL_NM = %(bf_col_nm)s, NEW_TBL_NM = %(new_tbl_nm)s, NEW_COL_NM = %(new_col_nm)s, EXPL = %(expl)s, UPD_DT = CURRENT_TIMESTAMP WHERE MAPP_ID = %(mapp_id)s
