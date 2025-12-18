@@ -293,6 +293,7 @@ export function init() {
 
                     const groupContainer = document.createElement('div');
                     groupContainer.className = 'group-container';
+                    groupContainer.style.position = 'relative'; // 팝업의 상대적 위치 기준점
 
                     const groupPill = document.createElement('div');
                     groupPill.className = `job-pill group-pill-summary ${colorClass}`;
@@ -366,38 +367,41 @@ export function init() {
                            popup.style.display = 'none';
                            popup.classList.remove('active');
                        } else {
-                           // 팝업 위치 계산 및 설정 (뷰포트 기준)
-                           const rect = groupPill.getBoundingClientRect();
+                           // 팝업 위치 계산 및 설정 (그룹 컨테이너 기준)
+                           const containerRect = groupContainer.getBoundingClientRect();
+                           const pillRect = groupPill.getBoundingClientRect();
                            const viewportWidth = window.innerWidth;
                            const viewportHeight = window.innerHeight;
 
                            // 팝업을 임시로 표시해서 크기를 측정
                            popup.style.display = 'block';
                            popup.style.visibility = 'hidden'; // 화면에 보이지 않게
+                           popup.style.position = 'absolute'; // 그룹 컨테이너 기준 절대 위치
                            const popupRect = popup.getBoundingClientRect();
                            popup.style.visibility = 'visible';
 
-                           let top = rect.bottom + 5; // 그룹 필 아래 5px
-                           let left = rect.left;
+                           // 그룹 컨테이너 내에서의 상대적 위치 계산
+                           let top = pillRect.height + 5; // 그룹 필 아래 5px
+                           let left = 0; // 그룹 컨테이너 왼쪽 기준
 
-                           // 팝업이 오른쪽으로 벗어나면 왼쪽으로 이동
-                           if (left + popupRect.width > viewportWidth) {
-                               left = rect.right - popupRect.width;
+                           // 팝업이 그룹 컨테이너 오른쪽으로 벗어나면 왼쪽으로 이동
+                           if (containerRect.left + left + popupRect.width > viewportWidth) {
+                               left = pillRect.width - popupRect.width;
                            }
 
                            // 팝업이 아래쪽으로 벗어나면 위쪽으로 이동
-                           if (top + popupRect.height > viewportHeight) {
-                               top = rect.top - popupRect.height - 5;
+                           if (containerRect.top + top + popupRect.height > viewportHeight) {
+                               top = -popupRect.height - 5;
                            }
 
                            // 팝업이 왼쪽으로 벗어나면 오른쪽으로 이동
-                           if (left < 0) {
+                           if (containerRect.left + left < 0) {
                                left = 0;
                            }
 
                            // 팝업이 위쪽으로 벗어나면 아래쪽으로 이동
-                           if (top < 0) {
-                               top = rect.bottom + 5;
+                           if (containerRect.top + top < 0) {
+                               top = pillRect.height + 5;
                            }
 
                            popup.style.top = `${top}px`;
