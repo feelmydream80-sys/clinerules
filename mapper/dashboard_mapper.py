@@ -6,7 +6,6 @@ from sql.analytics.analytics_sql import AnalyticsSQL
 from sql.raw_data.raw_data_sql import RawDataSQL
 from typing import Optional, List, Dict
 from msys.column_mapper import convert_to_new_columns
-from utils.logging_config import log_operation
 import json
 from datetime import datetime, timedelta
 import pytz
