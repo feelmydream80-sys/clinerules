@@ -1,5 +1,6 @@
 .env
 logs/
+log/
 msys_venv/
 my_setting/db_config.py
 __pycache__/
