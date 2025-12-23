@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, jsonify, request, session, current_app #, send_file
+from flask import Blueprint, render_template, jsonify, request, session, current_app, send_file
 from functools import wraps
 from .auth_routes import login_required, admin_required
 from dao.analytics_dao import AnalyticsDAO
@@ -6,6 +6,8 @@ from dao.mngr_sett_dao import MngrSettDAO
 from service.dashboard_service import DashboardService
 from msys.database import get_db_connection
 import logging
+import os
+from datetime import datetime
 # import openpyxl
 # from io import BytesIO
 # from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
@@ -374,7 +376,7 @@ def download_monthly_statistics_excel():
         conn = get_db_connection()
         analytics_dao = AnalyticsDAO(conn)
         monthly_data = analytics_dao.get_menu_access_stats_monthly(start_date, end_date)
-        
+
         return jsonify(monthly_data)
 
     except Exception as e:
@@ -383,3 +385,121 @@ def download_monthly_statistics_excel():
     finally:
         if conn:
             conn.close()
+
+# Excel Template Management Routes
+EXCEL_TEMPLATE_DIR = os.path.join(current_app.static_folder, 'excel_templates')
+EXCEL_TEMPLATE_PATH = os.path.join(EXCEL_TEMPLATE_DIR, 'excel_template.xlsx')
+
+@admin_bp.route('/api/excel_template/upload', methods=['POST'])
+@login_required
+def upload_excel_template():
+    """엑셀 템플릿 파일 업로드"""
+    if 'mngr_sett' not in session.get('user', {}).get('permissions', []):
+        return jsonify({'error': '권한이 없습니다.'}), 403
+
+    if 'file' not in request.files:
+        return jsonify({'error': '파일이 선택되지 않았습니다.'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': '파일이 선택되지 않았습니다.'}), 400
+
+    # 파일 타입 검증
+    allowed_extensions = {'xlsx', 'xls'}
+    if not ('.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in allowed_extensions):
+        return jsonify({'error': '엑셀 파일(.xlsx, .xls)만 업로드 가능합니다.'}), 400
+
+    # 파일 크기 제한 (10MB)
+    if len(file.read()) > 10 * 1024 * 1024:
+        return jsonify({'error': '파일 크기는 10MB를 초과할 수 없습니다.'}), 400
+    file.seek(0)  # 파일 포인터 리셋
+
+    try:
+        # 디렉토리 생성
+        os.makedirs(EXCEL_TEMPLATE_DIR, exist_ok=True)
+
+        # 파일 저장 (항상 같은 이름으로 덮어쓰기)
+        file.save(EXCEL_TEMPLATE_PATH)
+
+        return jsonify({
+            'success': True,
+            'message': '엑셀 템플릿이 성공적으로 업로드되었습니다.',
+            'filename': 'excel_template.xlsx'
+        })
+
+    except Exception as e:
+        logging.error(f"Error uploading Excel template: {e}", exc_info=True)
+        return jsonify({'error': '파일 업로드 중 오류가 발생했습니다.'}), 500
+
+@admin_bp.route('/api/excel_template/info', methods=['GET'])
+@login_required
+def get_excel_template_info():
+    """엑셀 템플릿 파일 정보 조회"""
+    if 'mngr_sett' not in session.get('user', {}).get('permissions', []):
+        return jsonify({'error': '권한이 없습니다.'}), 403
+
+    try:
+        if os.path.exists(EXCEL_TEMPLATE_PATH):
+            stat = os.stat(EXCEL_TEMPLATE_PATH)
+            file_size = stat.st_size
+            modified_time = datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+
+            return jsonify({
+                'exists': True,
+                'filename': 'excel_template.xlsx',
+                'size': file_size,
+                'modified': modified_time
+            })
+        else:
+            return jsonify({
+                'exists': False,
+                'message': '업로드된 엑셀 템플릿이 없습니다.'
+            })
+
+    except Exception as e:
+        logging.error(f"Error getting Excel template info: {e}", exc_info=True)
+        return jsonify({'error': '파일 정보 조회 중 오류가 발생했습니다.'}), 500
+
+@admin_bp.route('/api/excel_template/download', methods=['GET'])
+@login_required
+def download_excel_template():
+    """엑셀 템플릿 파일 다운로드"""
+    if 'mngr_sett' not in session.get('user', {}).get('permissions', []):
+        return jsonify({'error': '권한이 없습니다.'}), 403
+
+    try:
+        if not os.path.exists(EXCEL_TEMPLATE_PATH):
+            return jsonify({'error': '다운로드할 파일이 없습니다.'}), 404
+
+        return send_file(
+            EXCEL_TEMPLATE_PATH,
+            as_attachment=True,
+            download_name='excel_template.xlsx',
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+    except Exception as e:
+        logging.error(f"Error downloading Excel template: {e}", exc_info=True)
+        return jsonify({'error': '파일 다운로드 중 오류가 발생했습니다.'}), 500
+
+@admin_bp.route('/api/excel_template/delete', methods=['DELETE'])
+@login_required
+def delete_excel_template():
+    """엑셀 템플릿 파일 삭제"""
+    if 'mngr_sett' not in session.get('user', {}).get('permissions', []):
+        return jsonify({'error': '권한이 없습니다.'}), 403
+
+    try:
+        if not os.path.exists(EXCEL_TEMPLATE_PATH):
+            return jsonify({'error': '삭제할 파일이 없습니다.'}), 404
+
+        os.remove(EXCEL_TEMPLATE_PATH)
+
+        return jsonify({
+            'success': True,
+            'message': '엑셀 템플릿이 성공적으로 삭제되었습니다.'
+        })
+
+    except Exception as e:
+        logging.error(f"Error deleting Excel template: {e}", exc_info=True)
+        return jsonify({'error': '파일 삭제 중 오류가 발생했습니다.'}), 500

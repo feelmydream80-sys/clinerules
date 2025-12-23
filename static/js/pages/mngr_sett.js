@@ -2027,6 +2027,27 @@ export async function init() {
     if (importIconsBtn) importIconsBtn.addEventListener('click', importIcons);
 
 
+    // 엑셀 템플릿 관리 이벤트 리스너 추가
+    const excelTemplateTab = container.querySelector('button[data-tab="excelTemplateManagement"]');
+    if (excelTemplateTab) {
+        excelTemplateTab.addEventListener('click', loadExcelTemplateInfo);
+    }
+
+    const uploadExcelTemplateBtn = container.querySelector('#uploadExcelTemplateBtn');
+    if (uploadExcelTemplateBtn) {
+        uploadExcelTemplateBtn.addEventListener('click', uploadExcelTemplate);
+    }
+
+    const downloadExcelTemplateBtn = container.querySelector('#downloadExcelTemplateBtn');
+    if (downloadExcelTemplateBtn) {
+        downloadExcelTemplateBtn.addEventListener('click', downloadExcelTemplate);
+    }
+
+    const deleteExcelTemplateBtn = container.querySelector('#deleteExcelTemplateBtn');
+    if (deleteExcelTemplateBtn) {
+        deleteExcelTemplateBtn.addEventListener('click', deleteExcelTemplate);
+    }
+
     // 초기에 첫 번째 탭(기본 설정)을 활성화하고 데이터를 로드합니다.
     const firstTab = container.querySelector('.tab-button[data-tab="basicSettings"]');
     if (firstTab) {
@@ -2035,5 +2056,139 @@ export async function init() {
     }
     loadPageData();
 }
+
+// --- START: Excel Template Management Functions ---
+
+/**
+ * 엑셀 템플릿 정보를 로드하고 UI를 업데이트합니다.
+ */
+async function loadExcelTemplateInfo() {
+    try {
+        const response = await fetch('/api/excel_template/info');
+        if (!response.ok) throw new Error('템플릿 정보를 가져오는데 실패했습니다.');
+
+        const data = await response.json();
+        updateExcelTemplateUI(data);
+    } catch (error) {
+        showToast(error.message, 'error');
+        updateExcelTemplateUI({ exists: false, message: '정보를 불러올 수 없습니다.' });
+    }
+}
+
+/**
+ * 엑셀 템플릿 UI를 업데이트합니다.
+ * @param {object} data - 템플릿 정보
+ */
+function updateExcelTemplateUI(data) {
+    const container = document.getElementById('mngr_sett_page');
+    if (!container) return;
+
+    const infoDiv = container.querySelector('#excelTemplateInfo');
+    const downloadBtn = container.querySelector('#downloadExcelTemplateBtn');
+    const deleteBtn = container.querySelector('#deleteExcelTemplateBtn');
+
+    if (data.exists) {
+        infoDiv.innerHTML = `
+            <p><strong>파일명:</strong> ${data.filename}</p>
+            <p><strong>파일 크기:</strong> ${(data.size / 1024).toFixed(1)} KB</p>
+            <p><strong>수정일:</strong> ${data.modified}</p>
+        `;
+        if (downloadBtn) downloadBtn.style.display = 'inline-block';
+        if (deleteBtn) deleteBtn.style.display = 'inline-block';
+    } else {
+        infoDiv.innerHTML = `<p>${data.message || '업로드된 엑셀 템플릿이 없습니다.'}</p>`;
+        if (downloadBtn) downloadBtn.style.display = 'none';
+        if (deleteBtn) deleteBtn.style.display = 'none';
+    }
+}
+
+/**
+ * 엑셀 템플릿 파일을 업로드합니다.
+ */
+async function uploadExcelTemplate() {
+    const container = document.getElementById('mngr_sett_page');
+    if (!container) return;
+
+    const fileInput = container.querySelector('#excelTemplateFile');
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        showToast('파일을 선택해주세요.', 'warning');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('/api/excel_template/upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) throw new Error(result.error || '업로드에 실패했습니다.');
+
+        showToast(result.message, 'success');
+        loadExcelTemplateInfo(); // UI 업데이트
+        fileInput.value = ''; // 파일 입력 초기화
+
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
+/**
+ * 엑셀 템플릿 파일을 다운로드합니다.
+ */
+async function downloadExcelTemplate() {
+    try {
+        const response = await fetch('/api/excel_template/download');
+        if (!response.ok) throw new Error('다운로드에 실패했습니다.');
+
+        // 파일 다운로드 처리
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'excel_template.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        showToast('파일 다운로드가 시작되었습니다.', 'success');
+
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
+/**
+ * 엑셀 템플릿 파일을 삭제합니다.
+ */
+async function deleteExcelTemplate() {
+    if (!confirm('엑셀 템플릿을 정말로 삭제하시겠습니까?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/excel_template/delete', {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) throw new Error(result.error || '삭제에 실패했습니다.');
+
+        showToast(result.message, 'success');
+        loadExcelTemplateInfo(); // UI 업데이트
+
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
+// --- END: Excel Template Management Functions ---
 
 // --- END: Existing Page Logic ---
