@@ -387,8 +387,13 @@ def download_monthly_statistics_excel():
             conn.close()
 
 # Excel Template Management Routes
-EXCEL_TEMPLATE_DIR = os.path.join(current_app.static_folder, 'excel_templates')
-EXCEL_TEMPLATE_PATH = os.path.join(EXCEL_TEMPLATE_DIR, 'excel_template.xlsx')
+def get_excel_template_dir():
+    """Get the Excel template directory path."""
+    return os.path.join(current_app.static_folder, 'excel_templates')
+
+def get_excel_template_path():
+    """Get the Excel template file path."""
+    return os.path.join(get_excel_template_dir(), 'excel_template.xlsx')
 
 @admin_bp.route('/api/excel_template/upload', methods=['POST'])
 @login_required
@@ -416,10 +421,12 @@ def upload_excel_template():
 
     try:
         # 디렉토리 생성
-        os.makedirs(EXCEL_TEMPLATE_DIR, exist_ok=True)
+        excel_template_dir = get_excel_template_dir()
+        os.makedirs(excel_template_dir, exist_ok=True)
 
         # 파일 저장 (항상 같은 이름으로 덮어쓰기)
-        file.save(EXCEL_TEMPLATE_PATH)
+        excel_template_path = get_excel_template_path()
+        file.save(excel_template_path)
 
         return jsonify({
             'success': True,
@@ -439,8 +446,9 @@ def get_excel_template_info():
         return jsonify({'error': '권한이 없습니다.'}), 403
 
     try:
-        if os.path.exists(EXCEL_TEMPLATE_PATH):
-            stat = os.stat(EXCEL_TEMPLATE_PATH)
+        excel_template_path = get_excel_template_path()
+        if os.path.exists(excel_template_path):
+            stat = os.stat(excel_template_path)
             file_size = stat.st_size
             modified_time = datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
 
@@ -468,11 +476,12 @@ def download_excel_template():
         return jsonify({'error': '권한이 없습니다.'}), 403
 
     try:
-        if not os.path.exists(EXCEL_TEMPLATE_PATH):
+        excel_template_path = get_excel_template_path()
+        if not os.path.exists(excel_template_path):
             return jsonify({'error': '다운로드할 파일이 없습니다.'}), 404
 
         return send_file(
-            EXCEL_TEMPLATE_PATH,
+            excel_template_path,
             as_attachment=True,
             download_name='excel_template.xlsx',
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -490,10 +499,11 @@ def delete_excel_template():
         return jsonify({'error': '권한이 없습니다.'}), 403
 
     try:
-        if not os.path.exists(EXCEL_TEMPLATE_PATH):
+        excel_template_path = get_excel_template_path()
+        if not os.path.exists(excel_template_path):
             return jsonify({'error': '삭제할 파일이 없습니다.'}), 404
 
-        os.remove(EXCEL_TEMPLATE_PATH)
+        os.remove(excel_template_path)
 
         return jsonify({
             'success': True,
