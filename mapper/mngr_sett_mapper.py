@@ -33,11 +33,16 @@ class MngrSettMapper:
         기존 설정 유무에 따라 삽입 또는 업데이트를 수행합니다.
         """
         # 1. 데이터를 표준 컬럼명으로 변환
+        from msys.column_mapper import column_mapper
+        reverse_mapping = column_mapper.get_reverse_mapping('TB_MNGR_SETT')
+        self.logger.info(f"Mapper: Table name: TB_MNGR_SETT")
+        self.logger.info(f"Mapper: Reverse mapping for TB_MNGR_SETT: {reverse_mapping}")
         self.logger.info(f"Mapper: Original settings_data keys: {list(settings_data.keys())}")
         self.logger.info(f"Mapper: Original settings_data['sett_id']: {settings_data.get('sett_id')}")
         converted_settings = convert_to_new_columns('TB_MNGR_SETT', settings_data)
         self.logger.info(f"Mapper: Converted settings keys: {list(converted_settings.keys())}")
         self.logger.info(f"Mapper: Converted settings['cd']: {converted_settings.get('cd')}")
+        self.logger.info(f"Mapper: Converted settings['sett_id']: {converted_settings.get('sett_id')}")
         cd = converted_settings.get('cd')
 
         # 2. 기존 설정 확인 (변환된 데이터 기준)
