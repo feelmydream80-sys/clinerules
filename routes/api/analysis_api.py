@@ -58,11 +58,13 @@ def get_analytics_success_rate_trend_api():
 def get_analytics_trouble_by_code_api():
     """
     [분석 차트용] 장애 코드별 비율 데이터를 제공하는 API.
+    CD901(정상), CD904(계측중)를 제외한 실제 장애 코드들의 cd_nm을 표시합니다.
     """
     logging.info("▶ API: /api/analytics/trouble_by_code 요청 수신")
     try:
         with get_db_connection() as conn:
             dashboard_service = DashboardService(conn)
+            mst_service = ConMstService(conn)
             start_date_str = request.args.get('start_date')
             end_date_str = request.args.get('end_date')
             job_ids = request.args.getlist('job_ids')
@@ -79,6 +81,19 @@ def get_analytics_trouble_by_code_api():
                 return jsonify({"message": "날짜 형식이 유효하지 않습니다.YYYY-MM-DD 형식을 사용해주세요."}), 400
 
             trouble_data = dashboard_service.get_trouble_by_code(start_date_str, end_date_str, job_ids, user=user)
+
+            # 장애 코드 매핑 가져오기 (CD900번대 코드들의 cd_nm)
+            error_code_map = mst_service.get_error_code_map()
+            code_to_name = {row['cd']: row['cd_nm'] for row in error_code_map}
+
+            # 각 장애 코드의 cd_nm으로 변환
+            for item in trouble_data:
+                error_code = item.get('error_code')
+                if error_code in code_to_name:
+                    item['error_name'] = code_to_name[error_code]
+                else:
+                    item['error_name'] = error_code  # 매핑이 없는 경우 코드 그대로 사용
+
             return jsonify(trouble_data), 200
     except Exception as e:
         logging.error(f"❌ API: 분석 장애 데이터 조회 중 오류 발생: {e}", exc_info=True)
@@ -229,13 +244,13 @@ def api_analysis_error_codes():
             # Create dynamic status name mapping
             status_names = {}
             for code, desc in status_codes.items():
-                if desc.upper() == 'SUCCESS':
+                if 'FINISHED' in desc.upper():
                     status_names[code] = '정상(성공)'
-                elif desc.upper() == 'FAIL':
+                elif 'FAIL' in desc.upper():
                     status_names[code] = '실패'
-                elif desc.upper() == 'NO_DATA':
+                elif 'NO_DATA' in desc.upper():
                     status_names[code] = '미수집'
-                elif desc.upper() == 'IN_PROGRESS':
+                elif 'PROGRESS' in desc.upper():
                     status_names[code] = '계측중'
                 else:
                     status_names[code] = desc  # Use description as fallback
@@ -257,7 +272,7 @@ def api_analysis_error_code_map():
         with get_db_connection() as conn:
             mst_service = ConMstService(conn)
             rows = mst_service.get_error_code_map()
-            code_map = {row['cd']: row['item1'] for row in rows}
+            code_map = {row['cd']: row['cd_nm'] for row in rows}
             return jsonify(code_map), 200
     except Exception as e:
         return jsonify({'message': f'장애코드 매핑 조회 실패: {e}'}), 500

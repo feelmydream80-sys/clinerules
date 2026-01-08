@@ -26,6 +26,11 @@ import { initEventLog } from './eventLog.js';
 // 페이징 초기화 여부 플래그
 let isPaginationInitialized = false;
 
+// 전역 함수로 등록하여 dashboard.js에서 호출 가능
+window.resetDashboardPagination = function() {
+    isPaginationInitialized = false;
+};
+
 /**
  * @description 대시보드 요약 데이터를 로드하고 UI를 업데이트합니다.
  * 이 함수는 전역 스코프에 할당되어 날짜 변경 시 호출됩니다.

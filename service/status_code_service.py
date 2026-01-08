@@ -81,18 +81,18 @@ class StatusCodeService:
 
     def get_success_codes(self) -> List[str]:
         """Get codes that represent success states."""
-        # 성공 관련 코드들 (설명이 SUCCESS인 것들)
-        return [code for code, desc in self._status_codes.items() if 'SUCCESS' in desc.upper()]
+        # 성공 관련 코드들 (설명이 FINISHED인 것들)
+        return [code for code, desc in self._status_codes.items() if 'FINISHED' in desc.upper() or 'SUCCESS' in desc.upper()]
 
     def get_fail_codes(self) -> List[str]:
         """Get codes that represent failure states."""
-        # 실패 관련 코드들
-        return [code for code, desc in self._status_codes.items() if 'FAIL' in desc.upper()]
+        # 실패 관련 코드들 (FINISHED가 아닌 것들)
+        return [code for code, desc in self._status_codes.items() if 'FINISHED' not in desc.upper() and 'SUCCESS' not in desc.upper()]
 
     def get_in_progress_codes(self) -> List[str]:
         """Get codes that represent in-progress states."""
         # 진행중 관련 코드들
-        return [code for code, desc in self._status_codes.items() if 'PROGRESS' in desc.upper() or 'ING' in desc.upper()]
+        return [code for code, desc in self._status_codes.items() if '수집중' in desc]
 
     def get_no_data_codes(self) -> List[str]:
         """Get codes that represent no-data states."""

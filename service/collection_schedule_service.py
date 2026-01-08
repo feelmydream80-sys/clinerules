@@ -14,6 +14,7 @@ from flask import current_app
 class CollectionScheduleService:
     def __init__(self, conn):
         self.conn = conn
+        self.mst_mapper = MstMapper(conn)
 
     def get_schedule_only(self, start_date, end_date, user: Optional[Dict] = None) -> List[Dict]:
         """
@@ -121,19 +122,17 @@ class CollectionScheduleService:
                     schedules.sort(key=lambda x: x['date'])
                     histories = sorted(job_histories[job], key=lambda x: x['start_dt_kst'])
 
-                    # 상태 매핑
-                    status_mapping = {
+                    # 상태 매핑: CD901 성공, CD904 수집중, 나머지는 실패
+                    korean_status_mapping = {
                         'CD901': '성공',
-                        'CD902': '실패',
-                        'CD903': '데이터 존재안함',
-                        'CD904': '진행중',
-                        'CD905': '진행중'
+                        'CD904': '수집중',
+                        # 다른 모든 코드는 실패로 처리
                     }
 
                     # 순차적으로 매칭 (실행 기록 수만큼 스케줄에 성공 처리)
                     for i, hist in enumerate(histories):
                         if i < len(schedules):
-                            schedules[i]['status'] = status_mapping.get(hist['status'], '미수집')
+                            schedules[i]['status'] = korean_status_mapping.get(hist['status'], '실패')
 
     def _get_allowed_job_ids_for_schedule(self, user: Optional[Dict]) -> Optional[List[str]]:
         """사용자 권한에 따라 허용된 Job ID 목록을 반환합니다."""

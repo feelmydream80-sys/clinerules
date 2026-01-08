@@ -47,7 +47,12 @@ class CardSummaryService:
                 continue
             
             if job_id and job_id.startswith('CD'):
-                group = f"CD{job_id[2]}00"  # e.g., CD101 -> CD100
+                # Handle both 3-digit (CD101) and 4-digit (CD1001) job codes
+                numeric_part = job_id[2:]  # Extract numeric part after 'CD'
+                if len(numeric_part) == 4:  # 4-digit codes like CD1000, CD1001
+                    group = f"CD{numeric_part[:2]}00"  # CD1001 -> CD1000
+                else:  # 3-digit codes like CD101, CD300
+                    group = f"CD{numeric_part[0]}00"  # CD101 -> CD100, CD300 -> CD300
                 
                 # Extract hour from schedule time string
                 schedule_time_str = job.get('date', '')

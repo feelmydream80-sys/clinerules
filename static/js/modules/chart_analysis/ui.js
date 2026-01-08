@@ -340,7 +340,7 @@ export function renderTroublePieChart(troubleCodeData, chartType, startDate, end
 
     const labels = troubleCodeData.map(item => {
         const errorCode = item.error_code || '알 수 없음';
-        const errorName = errorCodeNameMap[errorCode] || errorCode;
+        const errorName = item.error_name || errorCodeNameMap[errorCode] || errorCode;
         return labelDisplayType === 'code' ? errorCode : errorName;
     });
     const dataValues = troubleCodeData.map(item => item.count || 0);

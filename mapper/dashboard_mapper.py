@@ -82,7 +82,7 @@ class DashboardMapper:
 
     def get_analytics_trouble_by_code(self, start_date: Optional[str] = None, end_date: Optional[str] = None, job_ids: Optional[List[str]] = None) -> List[Dict]:
         base_query = load_sql('analytics/get_trouble_by_code.sql')
-        conditions = ["status != 'CD901'"]
+        conditions = ["status NOT IN ('CD901', 'CD904')"]
         params = []
 
         kst = pytz.timezone('Asia/Seoul')

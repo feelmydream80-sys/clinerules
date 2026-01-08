@@ -29,6 +29,10 @@ export function init() {
     const dashboardElement = document.getElementById('dashboard-main-grid');
     if (dashboardElement && !window.isDashboardInitialized) {
         window.isDashboardInitialized = true;
+        // 페이징 초기화 플래그도 리셋
+        if (window.resetDashboardPagination) {
+            window.resetDashboardPagination();
+        }
         initializeDashboard().then(() => {
         });
     }

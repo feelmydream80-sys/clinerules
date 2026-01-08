@@ -123,20 +123,28 @@ class DashboardService:
         """Process today's schedule data to get status counts per job."""
         today_counts = defaultdict(lambda: {"success": 0, "fail": 0, "progress": 0, "uncollected": 0, "total_scheduled": 0})
 
+        # Get status mapping for dynamic lookup
+        from mapper.mst_mapper import MstMapper
+        mst_mapper = MstMapper(self.connection)
+        error_codes = mst_mapper.get_error_code_map()
+        status_mapping = {row['cd']: row['cd_nm'] for row in error_codes}
+
+        # Create reverse mapping for status name to category
+        # 성공 = success, 수집중 = progress, 실패 = fail
+        status_to_category = {
+            '성공': 'success',
+            '수집중': 'progress',
+            '실패': 'fail'
+        }
+
         for job in job_statuses_today:
             job_id = job['job_id']
             status = job['status']
 
             if status != '예정':
                 today_counts[job_id]["total_scheduled"] += 1
-                if status == '성공':
-                    today_counts[job_id]["success"] += 1
-                elif status == '실패':
-                    today_counts[job_id]["fail"] += 1
-                elif status == '수집중':
-                    today_counts[job_id]["progress"] += 1
-                elif status == '미수집':
-                    today_counts[job_id]["uncollected"] += 1
+                category = status_to_category.get(status, 'uncollected')
+                today_counts[job_id][category] += 1
 
         return today_counts
 
@@ -371,3 +379,4 @@ class DashboardService:
             return allowed
         
         return list(user_permissions)
+        
