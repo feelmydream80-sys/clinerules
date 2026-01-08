@@ -1,14 +1,14 @@
 from msys.database import get_db_connection
 from mapper.mst_mapper import MstMapper
 from mapper.user_mapper import UserMapper
+from mapper.dashboard_mapper import DashboardMapper
 from datetime import datetime, timedelta
 import croniter
 import pytz
 import re
 from typing import Optional, Dict, List
 from flask import current_app
-from utils.datetime_utils import is_within_schedule_grace_period
-from service.status_code_service import get_status_codes
+
 
 class CollectionScheduleService:
     def __init__(self, conn):
@@ -16,8 +16,9 @@ class CollectionScheduleService:
 
     def get_schedule_and_history(self, start_date, end_date, user: Optional[Dict] = None) -> List[Dict]:
         """
-        주어진 기간 동안의 데이터 수집 스케줄과 실제 이력을 조합하여 반환합니다.
+        주어진 기간 동안의 데이터 수집 스케줄과 히스토리를 결합하여 반환합니다.
         사용자 권한에 따라 표시되는 Job이 필터링됩니다.
+        예정 스케줄 + 실제 실행 기록을 매칭하여 정확한 상태를 표시합니다.
         """
         # 권한 확인 및 MST 데이터 가져오기
         allowed_job_ids = self._get_allowed_job_ids_for_schedule(user)
@@ -37,6 +38,104 @@ class CollectionScheduleService:
         self._process_unmatched_history(scheduled_tasks, history_by_date_job, allowed_job_ids)
 
         return scheduled_tasks
+
+    def _fetch_and_group_history_data(self, start_date, end_date, allowed_job_ids: Optional[List[str]], user: Optional[Dict]) -> Dict[str, List[Dict]]:
+        """히스토리 데이터를 가져와서 날짜/Job ID별로 그룹화합니다."""
+        dashboard_mapper = DashboardMapper(self.conn)
+        kst = pytz.timezone('Asia/Seoul')
+
+        # 히스토리 데이터 조회
+        history_data = dashboard_mapper.get_collection_history_for_schedule(start_date, end_date, allowed_job_ids)
+
+        # 날짜/Job ID별 그룹화
+        history_by_date_job = {}
+        for hist in history_data:
+            try:
+                # KST 변환 및 시간 정보 유지
+                start_dt_utc = hist['start_dt']
+                if start_dt_utc.tzinfo is None:
+                    start_dt_utc = pytz.utc.localize(start_dt_utc)
+                start_dt_kst = start_dt_utc.astimezone(kst)
+
+                date_key = start_dt_kst.strftime('%Y-%m-%d')
+                job_key = hist['job_id']
+
+                key = f"{date_key}_{job_key}"
+                if key not in history_by_date_job:
+                    history_by_date_job[key] = []
+
+                history_by_date_job[key].append({
+                    'start_dt_kst': start_dt_kst,
+                    'status': hist['status'],
+                    'job_id': job_key
+                })
+            except Exception as e:
+                current_app.logger.warning(f"Error processing history record: {e}")
+                continue
+
+        return history_by_date_job
+
+    def _match_schedule_with_history(self, scheduled_tasks: List[Dict], history_by_date_job: Dict[str, List[Dict]]) -> None:
+        """스케줄과 히스토리를 매칭하여 상태를 업데이트합니다."""
+        kst = pytz.timezone('Asia/Seoul')
+
+        for task in scheduled_tasks:
+            try:
+                task_time = datetime.strptime(task['date'], '%Y-%m-%d %H:%M:%S')
+                task_time_kst = kst.localize(task_time)
+
+                date_key = task_time.strftime('%Y-%m-%d')
+                job_key = task['job_id']
+                key = f"{date_key}_{job_key}"
+
+                if key in history_by_date_job:
+                    matching_histories = history_by_date_job[key]
+
+                    # 시간 차이 5분 이내로 매칭 (절대 시간 차이 비교)
+                    for hist in matching_histories:
+                        time_diff = abs((task_time_kst - hist['start_dt_kst']).total_seconds())
+                        if time_diff <= 300:  # 5분 = 300초
+                            # 상태 매핑
+                            status_mapping = {
+                                'CD901': '성공',
+                                'CD902': '실패',
+                                'CD903': '데이터 존재안함',
+                                'CD904': '진행중',
+                                'CD905': '진행중'
+                            }
+                            task['status'] = status_mapping.get(hist['status'], '미수집')
+                            break
+
+                    # 매칭된 히스토리는 제거 (중복 방지)
+                    history_by_date_job[key] = [h for h in matching_histories if abs((task_time_kst - h['start_dt_kst']).total_seconds()) > 300]
+
+            except Exception as e:
+                current_app.logger.warning(f"Error matching schedule with history for task {task}: {e}")
+                continue
+
+    def _process_unmatched_history(self, scheduled_tasks: List[Dict], history_by_date_job: Dict[str, List[Dict]], allowed_job_ids: Optional[List[str]]) -> None:
+        """매칭되지 않은 히스토리를 별도 항목으로 추가합니다."""
+        status_mapping = {
+            'CD901': '성공',
+            'CD902': '실패',
+            'CD903': '데이터 존재안함',
+            'CD904': '진행중',
+            'CD905': '진행중'
+        }
+
+        for key, histories in history_by_date_job.items():
+            for hist in histories:
+                try:
+                    # 매칭되지 않은 히스토리를 별도 항목으로 추가
+                    scheduled_tasks.append({
+                        "date": hist['start_dt_kst'].strftime('%Y-%m-%d %H:%M:%S'),
+                        "job_id": hist['job_id'],
+                        "cron": "Unscheduled",  # 스케줄 외 실행
+                        "status": status_mapping.get(hist['status'], '미수집'),
+                    })
+                except Exception as e:
+                    current_app.logger.warning(f"Error processing unmatched history {hist}: {e}")
+                    continue
 
     def _get_allowed_job_ids_for_schedule(self, user: Optional[Dict]) -> Optional[List[str]]:
         """사용자 권한에 따라 허용된 Job ID 목록을 반환합니다."""
@@ -94,128 +193,3 @@ class CollectionScheduleService:
 
         return scheduled_tasks
 
-    def _fetch_and_group_history_data(self, start_date, end_date, allowed_job_ids: Optional[List[str]], user: Optional[Dict]) -> Dict[str, Dict[str, List[Dict]]]:
-        """히스토리 데이터를 가져와서 날짜와 Job ID별로 그룹화합니다."""
-        from service.dashboard_service import DashboardService
-        dashboard_service = DashboardService(self.conn)
-        kst = pytz.timezone('Asia/Seoul')
-
-        history_data = dashboard_service.get_collection_history_for_schedule_with_start_dt(
-            start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), allowed_job_ids, user=user
-        )
-
-        history_by_date_job = {}
-        for item in history_data:
-            history_dt_utc = item.get('start_dt')
-            if not history_dt_utc:
-                continue
-
-            if history_dt_utc.tzinfo is None:
-                history_dt_utc = pytz.utc.localize(history_dt_utc)
-
-            history_dt_kst = history_dt_utc.astimezone(kst)
-            item['start_dt_kst'] = history_dt_kst
-            date_str = history_dt_kst.strftime('%Y-%m-%d')
-            job_id = item['job_id']
-
-            if date_str not in history_by_date_job:
-                history_by_date_job[date_str] = {}
-            if job_id not in history_by_date_job[date_str]:
-                history_by_date_job[date_str][job_id] = []
-            history_by_date_job[date_str][job_id].append(item)
-
-        return history_by_date_job
-
-    def _match_schedule_with_history(self, scheduled_tasks: List[Dict], history_by_date_job: Dict[str, Dict[str, List[Dict]]]) -> None:
-        """스케줄된 작업들과 히스토리 데이터를 매칭하여 상태를 업데이트합니다."""
-        kst = pytz.timezone('Asia/Seoul')
-
-        # Get all valid status codes dynamically
-        status_codes = get_status_codes()
-        valid_status_codes = list(status_codes.keys())
-
-        for task in scheduled_tasks:
-            if task['status'] == '예정':
-                continue
-
-            try:
-                schedule_dt = datetime.strptime(task['date'], '%Y-%m-%d %H:%M:%S')
-                schedule_dt = kst.localize(schedule_dt)
-            except (ValueError, KeyError) as e:
-                current_app.logger.error(f"Failed to parse schedule date for task {task.get('job_id', 'unknown')}: {e}")
-                continue
-
-            schedule_date_str = schedule_dt.strftime('%Y-%m-%d')
-            job_id = task['job_id']
-
-            if schedule_date_str in history_by_date_job and job_id in history_by_date_job[schedule_date_str]:
-                history_for_job = history_by_date_job[schedule_date_str][job_id]
-                history_for_job.sort(key=lambda x: x.get('start_dt_kst') or datetime.min.replace(tzinfo=kst))
-
-                # 가장 먼저 발생한 기록을 찾아 매칭
-                best_match = None
-                for item in history_for_job:
-                    status_code = item.get('status')
-                    if status_code in valid_status_codes:
-                        best_match = item
-                        break
-
-                if best_match:
-                    self._update_task_status_from_history(task, best_match)
-                    history_for_job.remove(best_match)
-
-    def _update_task_status_from_history(self, task: Dict, history_item: Dict) -> None:
-        """히스토리 항목으로부터 작업 상태를 업데이트합니다."""
-        status_code = history_item.get('status')
-        status_text = self._convert_status_code_to_text(status_code)
-        task['status'] = status_text
-        task['actual_date'] = history_item['start_dt_kst'].strftime('%Y-%m-%d %H:%M:%S')
-
-    def _process_unmatched_history(self, scheduled_tasks: List[Dict], history_by_date_job: Dict[str, Dict[str, List[Dict]]], allowed_job_ids: Optional[List[str]]) -> None:
-        """매칭되지 않은 히스토리 기록들을 처리합니다."""
-        allowed_job_set = None if allowed_job_ids is None else set(allowed_job_ids)
-
-        for date_str, jobs in history_by_date_job.items():
-            for job_id, history_list in jobs.items():
-                if allowed_job_set is not None and job_id not in allowed_job_set:
-                    continue
-
-                for item in history_list:
-                    status_text = self._convert_status_code_to_text(item.get('status'))
-                    kst_time = item['start_dt_kst']
-
-                    scheduled_tasks.append({
-                        "date": kst_time.strftime('%Y-%m-%d %H:%M:%S'),
-                        "job_id": job_id,
-                        "cron": "Unscheduled",
-                        "status": status_text,
-                        "actual_date": kst_time.strftime('%Y-%m-%d %H:%M:%S'),
-                        "is_unscheduled": True
-                    })
-
-    def _convert_status_code_to_text(self, status_code: str) -> str:
-        """상태 코드를 텍스트로 변환합니다."""
-        if not status_code:
-            return '알 수 없음'
-
-        # Get status codes dynamically
-        status_codes = get_status_codes()
-
-        # Create mapping from codes to display text
-        # For now, use the description from database, but we might need custom mapping
-        # This could be extended to have a separate mapping table or configuration
-        status_mapping = {}
-        for code, desc in status_codes.items():
-            if desc.upper() == 'SUCCESS':
-                status_mapping[code] = '성공'
-            elif desc.upper() == 'FAIL':
-                status_mapping[code] = '실패'
-            elif desc.upper() == 'NO_DATA':
-                status_mapping[code] = '미수집'
-            elif desc.upper() == 'IN_PROGRESS':
-                status_mapping[code] = '수집중'
-            else:
-                # For unknown descriptions, use the description as-is or a default
-                status_mapping[code] = desc
-
-        return status_mapping.get(status_code, '알 수 없음')
