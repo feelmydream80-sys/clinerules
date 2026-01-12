@@ -205,16 +205,9 @@ export function init() {
         if (job.actual_date) {
             lines.push(`실제 수집: ${job.actual_date}`);
         }
-        if (job.status) {
-            lines.push(`상태: ${job.status}`);
-        }
-        if (job.cd_nm) {
-            lines.push(`이름: ${job.cd_nm}`);
-        }
-        if (job.cd_desc) {
-            lines.push(`설명: ${job.cd_desc}`);
-        }
-        return lines.join('\n');
+        if (job.status) lines.push(`상태: ${job.status}`);
+        if (name) lines.push(`설명: ${name}`);
+        return lines.join(' | ');
     }
 
     function renderCalendar(data) {

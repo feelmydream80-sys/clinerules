@@ -133,7 +133,6 @@ class CollectionScheduleService:
                     for i, hist in enumerate(histories):
                         if i < len(schedules):
                             schedules[i]['status'] = korean_status_mapping.get(hist['status'], '실패')
-                            schedules[i]['actual_date'] = hist['start_dt_kst'].strftime('%Y-%m-%d %H:%M:%S')
 
     def _get_allowed_job_ids_for_schedule(self, user: Optional[Dict]) -> Optional[List[str]]:
         """사용자 권한에 따라 허용된 Job ID 목록을 반환합니다."""
@@ -156,20 +155,12 @@ class CollectionScheduleService:
         now_kst = datetime.now(kst)
 
         all_mst_data = mst_mapper.get_all_mst_for_schedule(allowed_job_ids)
-        jobs = {}
-        for mst in all_mst_data:
-            if mst.get('item6'):
-                jobs[mst['cd']] = {
-                    'cron': mst['item6'],
-                    'cd_nm': mst.get('cd_nm', mst['cd']),
-                    'cd_desc': mst.get('cd_desc', '')
-                }
+        jobs = {mst['cd']: mst.get('item6') for mst in all_mst_data if mst.get('item6')}
 
         scheduled_tasks = []
         current_date = start_date
         while current_date <= end_date:
-            for cd, job_info in jobs.items():
-                cron_str = job_info['cron']
+            for cd, cron_str in jobs.items():
                 if not cron_str or not re.match(r'^(\S+\s+){4,5}\S+$', cron_str.strip()):
                     continue
 
@@ -188,8 +179,6 @@ class CollectionScheduleService:
                             "job_id": cd,
                             "cron": cron_str,
                             "status": status,
-                            "cd_nm": job_info['cd_nm'],
-                            "cd_desc": job_info['cd_desc'],
                         })
                         schedule_time = cron.get_next(datetime)
                 except (ValueError, KeyError):
