@@ -45,5 +45,5 @@ def validate_password():
     if not password:
         return jsonify({"is_valid": False, "message": "비밀번호를 입력해주세요."}), 400
 
-    is_valid, message = PasswordService.validate_password_policy(password)
-    return jsonify({"is_valid": is_valid, "message": message})
+    results = PasswordService.validate_password_policy_detailed(password)
+    return jsonify(results)

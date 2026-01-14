@@ -79,6 +79,55 @@ class PasswordService:
             return False
 
     @staticmethod
+    def validate_password_policy_detailed(password: str) -> dict:
+        """
+        Validates the password against the defined security policy and returns detailed results.
+
+        Args:
+            password: The plain-text password to validate.
+
+        Returns:
+            A dictionary containing validation results for each rule.
+        """
+        results = {
+            'length': len(password) >= 8,
+            'special_char': bool(re.search(r'[!@#$%^&*(),.?":{}|<>]', password)),
+            'no_consecutive': True,
+            'no_repeating': True,
+            'is_valid': True,
+            'message': "비밀번호가 유효합니다."
+        }
+
+        # Check for consecutive numbers (3 or more)
+        for i in range(len(password) - 2):
+            if password[i].isdigit() and password[i+1].isdigit() and password[i+2].isdigit():
+                if int(password[i+1]) == int(password[i]) + 1 and int(password[i+2]) == int(password[i+1]) + 1:
+                    results['no_consecutive'] = False
+                    results['is_valid'] = False
+                    results['message'] = "연속된 숫자 (예: 123, 456)는 사용할 수 없습니다."
+                    break
+
+        # Check for repeating numbers (3 or more)
+        for i in range(len(password) - 2):
+            if password[i].isdigit() and password[i] == password[i+1] and password[i] == password[i+2]:
+                results['no_repeating'] = False
+                results['is_valid'] = False
+                results['message'] = "동일한 숫자를 3번 이상 반복 (예: 111, 888)할 수 없습니다."
+                break
+
+        # Check length
+        if not results['length']:
+            results['is_valid'] = False
+            results['message'] = "비밀번호는 8자 이상이어야 합니다."
+
+        # Check special characters
+        if not results['special_char']:
+            results['is_valid'] = False
+            results['message'] = "최소 1개 이상의 특수문자를 포함해야 합니다."
+
+        return results
+
+    @staticmethod
     def validate_password_policy(password: str) -> tuple[bool, str]:
         """
         Validates the password against the defined security policy.
@@ -89,22 +138,5 @@ class PasswordService:
         Returns:
             A tuple containing a boolean (True if valid) and a message string.
         """
-        if len(password) < 8:
-            return False, "비밀번호는 8자 이상이어야 합니다."
-
-        # 1. Check for special characters
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-            return False, "최소 1개 이상의 특수문자를 포함해야 합니다."
-
-        # 2. Check for consecutive numbers (3 or more)
-        for i in range(len(password) - 2):
-            if password[i].isdigit() and password[i+1].isdigit() and password[i+2].isdigit():
-                if int(password[i+1]) == int(password[i]) + 1 and int(password[i+2]) == int(password[i+1]) + 1:
-                    return False, "연속된 숫자 (예: 123, 456)는 사용할 수 없습니다."
-
-        # 3. Check for repeating numbers (3 or more)
-        for i in range(len(password) - 2):
-            if password[i].isdigit() and password[i] == password[i+1] and password[i] == password[i+2]:
-                return False, "동일한 숫자를 3번 이상 반복 (예: 111, 888)할 수 없습니다."
-
-        return True, "비밀번호가 유효합니다."
+        results = PasswordService.validate_password_policy_detailed(password)
+        return results['is_valid'], results['message']

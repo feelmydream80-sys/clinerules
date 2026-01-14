@@ -472,8 +472,6 @@ def get_excel_template_info():
 @login_required
 def download_excel_template():
     """엑셀 템플릿 파일 다운로드"""
-    if 'mngr_sett' not in session.get('user', {}).get('permissions', []):
-        return jsonify({'error': '권한이 없습니다.'}), 403
 
     try:
         excel_template_path = get_excel_template_path()
