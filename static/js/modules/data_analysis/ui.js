@@ -64,7 +64,7 @@ export function renderSummaryCards(rawData) {
     if (durations.length > 0) {
         const minObj = durations.reduce((a, b) => a.min < b.min ? a : b);
         const maxObj = durations.reduce((a, b) => a.min > b.min ? a : b);
-        durationText = `0.0hr/${maxObj.min.toFixed(1)}hr`;
+        durationText = `${maxObj.min.toFixed(1)}hr/${minObj.min.toFixed(1)}hr`;
         if (maxObj.row && maxObj.row.start_dt && maxObj.row.job_id) {
             const dateStr = new Date(maxObj.row.start_dt).toLocaleString('ko-KR', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
             maxInfoHtml = `<div style='font-size:0.5em;color:#666;margin-top:2px;'>최대: ${dateStr} (${maxObj.row.job_id})</div>`;
