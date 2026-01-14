@@ -217,7 +217,7 @@ export function init() {
         return lines.join('\n');
     }
 
-    function renderCalendar(data) {
+    function renderCalendar(data, today) {
         calendarGrid.innerHTML = '';
         const displayMode = document.querySelector('input[name="displayMode"]:checked').value;
         if (displayMode === 'name') {
@@ -225,7 +225,7 @@ export function init() {
         } else {
             calendarGrid.classList.remove('name-mode');
         }
-        const today = new Date().toISOString().split('T')[0];
+        // today는 매개변수로 받음 (서버에서 온 KST 기준 날짜)
 
         const groupedData = data.reduce((acc, item) => {
             const date = item.date.split(' ')[0]; // Use only the date part for grouping
@@ -472,6 +472,22 @@ export function init() {
         nodataCountEl.textContent = nodata;
     }
 
+    // 오늘 날짜를 서버에서 가져오는 독립적인 함수
+    async function fetchTodayDate() {
+        try {
+            const response = await fetch('/api/today_date');
+            if (!response.ok) {
+                throw new Error('Failed to fetch today date');
+            }
+            const data = await response.json();
+            return data.today_date;
+        } catch (e) {
+            console.error("Failed to fetch today date, using client time", e);
+            // 실패 시 클라이언트 시간 사용 (fallback)
+            return new Date().toISOString().split('T')[0];
+        }
+    }
+
     async function fetchData(viewType) {
         // Fetch MST data for mapping if not already fetched
         if (Object.keys(mstData).length === 0) {
@@ -499,7 +515,7 @@ export function init() {
                 }
                 throw new Error('Network response was not ok');
             }
-            
+
             const data = await response.json();
 
 
@@ -512,15 +528,18 @@ export function init() {
             if (data.display_settings) {
                 settingsManager.updateSettings(data.display_settings);
             }
-            
+
             cardTitle.textContent = viewType === 'weekly' ? '주간 수집 현황 히트맵' : '월간 수집 현황 히트맵';
-            
+
+            // 오늘 날짜를 가져와서 renderCalendar에 전달
+            const today = await fetchTodayDate();
+
             // Render calendar and summary with the schedule data
             if(data.schedule_data) {
-                renderCalendar(data.schedule_data);
+                renderCalendar(data.schedule_data, today);
                 updateSummary(data.schedule_data);
             }
-            
+
             showToast(viewType === 'weekly' ? '주간 데이터를 불러왔습니다.' : '월간 데이터를 불러왔습니다.', 'success');
 
         } catch (error) {

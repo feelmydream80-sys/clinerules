@@ -15,6 +15,7 @@ def init_app(app):
     from . import admin_routes
     from . import card_summary_routes
     from . import data_report_routes
+    from . import today_routes
 
     app.register_blueprint(auth_routes.auth_bp)
     app.register_blueprint(auth_api_bp)
@@ -33,3 +34,4 @@ def init_app(app):
     app.register_blueprint(admin_routes.admin_bp)
     app.register_blueprint(card_summary_routes.card_summary_bp)
     app.register_blueprint(data_report_routes.data_report_bp)
+    app.register_blueprint(today_routes.today_bp)
