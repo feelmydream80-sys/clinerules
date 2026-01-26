@@ -60,7 +60,7 @@
     }
     .popup {
         display: none;
-        position: absolute; /* Changed to absolute for container-relative positioning */
+        position: absolute; /* Changed to absolute to display outside the card */
         background-color: #fff;
         border: 1px solid #d1d5db;
         border-radius: 8px;
@@ -68,8 +68,7 @@
         z-index: 40; /* Lower z-index to be below nav menu (nav is z-50) */
         width: max-content;
         max-width: 350px; /* Added max-width to prevent excessively wide popups */
-        max-height: 60vh; /* Limit height to 60% of viewport height */
-        overflow-y: auto; /* Add vertical scroll when content exceeds max-height */
+        /* Removed max-height and overflow-y to allow popup to expand without scroll */
         box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         text-align: left;
         transition: opacity 0.2s;

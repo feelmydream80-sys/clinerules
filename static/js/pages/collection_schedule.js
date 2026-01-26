@@ -218,7 +218,7 @@ export function init() {
         return lines.join('\n');
     }
 
-    function renderCalendar(data, today) {
+    function renderCalendar(data, today, viewType = 'weekly') {
         calendarGrid.innerHTML = '';
         const displayMode = document.querySelector('input[name="displayMode"]:checked').value;
         if (displayMode === 'name') {
@@ -329,6 +329,7 @@ export function init() {
                     `;
                     groupPill.title = originalGroupName;
 
+                    // 팝업 로직 (주간/월간 모두 동일)
                     const popup = document.createElement('div');
                     popup.className = 'popup';
                     groupJobs.sort((a, b) => {
@@ -352,88 +353,88 @@ export function init() {
                         }
                         const iconHtml = settingsManager.getIcon(statusInfo.key);
                         const contentHtml = iconHtml ? `${iconHtml}&nbsp;${originalName}` : originalName;
-                        
+
                         const pillElement = document.createElement('div');
                         pillElement.className = `job-pill ${statusInfo.class}`;
                         pillElement.title = createTooltipContent(job, originalName);
                         pillElement.innerHTML = contentHtml;
-                        
+
                         popup.appendChild(pillElement);
                     });
-                    
+
+                    document.body.appendChild(popup);
+
+                        // --- Popup click logic ---
+                        const togglePopup = (event) => {
+                            event.stopPropagation(); // 이벤트 버블링 방지
+
+                            // 다른 팝업들을 모두 닫음
+                            document.querySelectorAll('.popup').forEach(p => {
+                                if (p !== popup) {
+                                    p.style.display = 'none';
+                                    p.classList.remove('active');
+                                }
+                            });
+
+                            // 현재 팝업 토글
+                            const isVisible = popup.style.display === 'block';
+                            if (isVisible) {
+                                popup.style.display = 'none';
+                                popup.classList.remove('active');
+                            } else {
+                                // 팝업 위치 계산 및 설정 (body 기준 절대 위치)
+                                const pillRect = groupPill.getBoundingClientRect();
+
+                                // 팝업을 임시로 표시해서 크기를 측정
+                                popup.style.display = 'block';
+                                popup.style.visibility = 'hidden'; // 화면에 보이지 않게
+                                popup.style.position = 'absolute'; // body 기준 절대 위치
+                                const popupRect = popup.getBoundingClientRect();
+                                popup.style.visibility = 'visible';
+
+                                // 팝업 위치 우선순위: 아래쪽 → 위쪽 → 중앙 (화면 내 절대 위치)
+                                let top, left;
+
+                                // 그룹 필의 절대 위치를 기준으로 계산
+                                const pillBottom = pillRect.bottom + window.scrollY;
+                                const pillTop = pillRect.top + window.scrollY;
+                                const pillLeft = pillRect.left + window.scrollX;
+                                const pillRight = pillRect.right + window.scrollX;
+
+                                // 1. 아래쪽 공간 확인 (기본 우선순위)
+                                const belowSpace = window.innerHeight - (pillRect.bottom + window.scrollY) - 5;
+                                if (belowSpace >= popupRect.height) {
+                                    // 아래쪽에 충분한 공간이 있음
+                                    top = pillBottom + 5;
+                                    left = Math.max(0, Math.min(pillLeft, window.innerWidth + window.scrollX - popupRect.width));
+                                } else {
+                                    // 2. 위쪽 공간 확인
+                                    const aboveSpace = pillRect.top + window.scrollY - 5;
+                                    if (aboveSpace >= popupRect.height) {
+                                        // 위쪽에 충분한 공간이 있음
+                                        top = pillTop - popupRect.height - 5;
+                                        left = Math.max(0, Math.min(pillLeft, window.innerWidth + window.scrollX - popupRect.width));
+                                    } else {
+                                        // 3. 양쪽 모두 공간 부족 - 화면 중앙에 표시
+                                        top = Math.max(0, (window.innerHeight - popupRect.height) / 2 + window.scrollY);
+                                        left = Math.max(0, (window.innerWidth - popupRect.width) / 2 + window.scrollX);
+                                    }
+                                }
+
+                                // 최종 위치 설정 (화면 경계 보장)
+                                top = Math.max(0, Math.min(top, window.innerHeight + window.scrollY - popupRect.height));
+                                left = Math.max(0, Math.min(left, window.innerWidth + window.scrollX - popupRect.width));
+
+                                popup.style.top = `${top}px`;
+                                popup.style.left = `${left}px`;
+                                popup.classList.add('active');
+                            }
+                        };
+
+                    groupPill.addEventListener('click', togglePopup);
+
                     groupContainer.appendChild(groupPill);
-                    groupContainer.appendChild(popup);
                    jobsContainer.appendChild(groupContainer);
-
-                   // --- Popup click logic ---
-                   const togglePopup = (event) => {
-                       event.stopPropagation(); // 이벤트 버블링 방지
-
-                       // 다른 팝업들을 모두 닫음
-                       document.querySelectorAll('.popup').forEach(p => {
-                           if (p !== popup) {
-                               p.style.display = 'none';
-                               p.classList.remove('active');
-                           }
-                       });
-
-                       // 현재 팝업 토글
-                       const isVisible = popup.style.display === 'block';
-                       if (isVisible) {
-                           popup.style.display = 'none';
-                           popup.classList.remove('active');
-                       } else {
-                           // 팝업 위치 계산 및 설정 (그룹 컨테이너 기준)
-                           const containerRect = groupContainer.getBoundingClientRect();
-                           const pillRect = groupPill.getBoundingClientRect();
-
-                           // 팝업을 임시로 표시해서 크기를 측정
-                           popup.style.display = 'block';
-                           popup.style.visibility = 'hidden'; // 화면에 보이지 않게
-                           popup.style.position = 'absolute'; // 컨테이너 기준 상대 위치
-                           const popupRect = popup.getBoundingClientRect();
-                           popup.style.visibility = 'visible';
-
-                           // 팝업 위치 우선순위: 아래쪽 → 위쪽 → 중앙 (컨테이너 내 상대 위치)
-                           let top, left;
-
-                           // 그룹 컨테이너 내에서의 상대 위치 계산
-                           const containerHeight = groupContainer.offsetHeight;
-                           const containerWidth = groupContainer.offsetWidth;
-                           const pillBottom = groupPill.offsetTop + groupPill.offsetHeight;
-                           const pillLeft = groupPill.offsetLeft;
-
-                           // 1. 아래쪽 공간 확인 (기본 우선순위)
-                           const belowSpace = containerHeight - pillBottom - 5;
-                           if (belowSpace >= popupRect.height) {
-                               // 아래쪽에 충분한 공간이 있음
-                               top = pillBottom + 5;
-                               left = Math.max(0, Math.min(pillLeft, containerWidth - popupRect.width));
-                           } else {
-                               // 2. 위쪽 공간 확인
-                               const aboveSpace = groupPill.offsetTop - 5;
-                               if (aboveSpace >= popupRect.height) {
-                                   // 위쪽에 충분한 공간이 있음
-                                   top = groupPill.offsetTop - popupRect.height - 5;
-                                   left = Math.max(0, Math.min(pillLeft, containerWidth - popupRect.width));
-                               } else {
-                                   // 3. 양쪽 모두 공간 부족 - 컨테이너 중앙에 표시
-                                   top = Math.max(0, (containerHeight - popupRect.height) / 2);
-                                   left = Math.max(0, (containerWidth - popupRect.width) / 2);
-                               }
-                           }
-
-                           // 최종 위치 설정 (컨테이너 경계 보장)
-                           top = Math.max(0, Math.min(top, containerHeight - popupRect.height));
-                           left = Math.max(0, Math.min(left, containerWidth - popupRect.width));
-
-                           popup.style.top = `${top}px`;
-                           popup.style.left = `${left}px`;
-                           popup.classList.add('active');
-                       }
-                   };
-
-                   groupPill.addEventListener('click', togglePopup);
                 } else {
                     // Render individual job pills
                     groupJobs.sort((a, b) => {
@@ -544,7 +545,7 @@ export function init() {
 
             // Render calendar and summary with the schedule data
             if(data.schedule_data) {
-                renderCalendar(data.schedule_data, today);
+                renderCalendar(data.schedule_data, today, viewType);
                 updateSummary(data.schedule_data);
             }
 

@@ -9,6 +9,7 @@ from service.mngr_sett_service import MngrSettService
 from service.icon_service import IconService
 from msys.database import get_db_connection
 from service.user_service import UserService
+from service.password_service import PasswordService
 from .auth_routes import login_required, check_password_change_required, admin_required
 
 mngr_sett_bp = Blueprint('mngr_sett', __name__)
@@ -378,6 +379,88 @@ def reset_password():
     except Exception as e:
         logging.error(f"❌ API: 비밀번호 초기화 실패: {e}", exc_info=True)
         return jsonify({"message": "비밀번호 초기화 중 오류가 발생했습니다."}), 500
+
+@api_mngr_sett_bp.route('/users/bulk-add', methods=['POST'])
+@login_required
+@check_password_change_required
+@mngr_sett_required
+def bulk_add_users():
+    """여러 사용자를 한 번에 추가합니다."""
+    data = request.json
+    user_ids = data.get('user_ids', [])
+
+    if not user_ids or not isinstance(user_ids, list):
+        return jsonify({"message": "user_ids 배열이 필요합니다."}), 400
+
+    # Validate user IDs
+    invalid_ids = [user_id for user_id in user_ids
+                  if not user_id or len(user_id) < 4 or len(user_id) > 20 or not user_id.isalnum()]
+
+    if invalid_ids:
+        return jsonify({
+            "message": f"유효하지 않은 사용자 ID가 포함되어 있습니다: {', '.join(invalid_ids)}. 4-20자 영문, 숫자만 허용됩니다.",
+            "success_count": 0,
+            "failed_count": len(user_ids),
+            "failed_users": user_ids
+        }), 400
+
+    try:
+        conn = get_db_connection()
+        user_service = UserService(conn)
+
+        # Add users and track results
+        success_count = 0
+        failed_users = []
+        already_exists_users = []
+
+        for user_id in user_ids:
+            try:
+                # Check if user already exists
+                existing_user = user_service.user_mapper.find_by_id(user_id)
+                if existing_user:
+                    already_exists_users.append(user_id)
+                    continue
+
+                # Add user with default password (same as user_id)
+                hashed_password = PasswordService.hash_password(user_id)
+                user_service.user_mapper.save(user_id, hashed_password)
+
+                # Set default status as APPROVED for bulk added users
+                user_service.user_mapper.update_status(user_id, 'APPROVED')
+
+                success_count += 1
+
+            except Exception as e:
+                logging.error(f"❌ API: 사용자 '{user_id}' 추가 실패: {e}", exc_info=True)
+                failed_users.append(user_id)
+                conn.rollback()
+
+        conn.commit()
+
+        # Prepare detailed response
+        response_data = {
+            "message": f"성공적으로 {success_count}명의 사용자를 추가했습니다.",
+            "success_count": success_count,
+            "failed_count": len(failed_users),
+            "failed_users": failed_users
+        }
+
+        # Add already exists users info if any
+        if already_exists_users:
+            response_data["message"] += f" (이미 존재하는 사용자: {len(already_exists_users)}명 - {', '.join(already_exists_users)})"
+            response_data["already_exists_count"] = len(already_exists_users)
+            response_data["already_exists_users"] = already_exists_users
+
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        logging.error(f"❌ API: 대량 사용자 추가 실패: {e}", exc_info=True)
+        return jsonify({
+            "message": "대량 사용자 추가 중 오류가 발생했습니다.",
+            "success_count": 0,
+            "failed_count": len(user_ids),
+            "failed_users": user_ids
+        }), 500
 
 @api_mngr_sett_bp.route('/users/permissions', methods=['POST'])
 @login_required

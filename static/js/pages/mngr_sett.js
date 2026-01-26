@@ -2,7 +2,7 @@
 // @DOC_DESC: 관리자 설정 페이지의 메인 JavaScript 파일. 각 탭의 UI와 이벤트 로직을 관리합니다.
 
 // 디버그 모드 설정 (프로덕션에서는 false로 변경)
-const DEBUG_MODE = false; // TODO: 프로덕션 배포 시 false로 변경
+const DEBUG_MODE = true; // TODO: 프로덕션 배포 시 false로 변경
 
 function debugLog(...args) {
     if (DEBUG_MODE) {
@@ -1587,6 +1587,180 @@ async function saveAllUserPermissions() {
     }
 }
 
+/**
+ * Shows the bulk user input modal for adding multiple users at once.
+ */
+function showBulkUserInputModal() {
+    debugLog('=== showBulkUserInputModal() called ===');
+    console.log('showBulkUserInputModal 함수 호출됨');
+
+    try {
+        const modal = document.createElement('div');
+        modal.id = 'bulkUserModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">대량 사용자 추가</h3>
+                    <span class="close-button" id="closeBulkUserModal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p>여러 사용자를 한 번에 추가할 수 있습니다.</p>
+                    <p>각 사용자 ID를 줄바꿈(엔터)으로 구분하여 입력하세요.</p>
+                    <textarea id="bulkUserInput" class="w-full p-2 border rounded-md shadow-sm" rows="10" placeholder="user001&#10;user002&#10;user003&#10;user004&#10;user005"></textarea>
+                    <div class="mt-4 p-3 bg-gray-100 rounded-md">
+                        <strong>주의:</strong> 비밀번호는 사용자 ID와 동일하게 초기화됩니다.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="addBulkUsersBtn" class="save">추가</button>
+                    <button id="cancelBulkUsersBtn" class="reset">취소</button>
+                </div>
+            </div>
+        `;
+
+        // 모달 창 스타일 설정
+        modal.style.display = 'block';
+        modal.style.position = 'fixed';
+        modal.style.zIndex = '1050';
+        modal.style.left = '0';
+        modal.style.top = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.overflow = 'auto';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+
+        document.body.appendChild(modal);
+        debugLog('모달 창이 body에 추가됨');
+        console.log('모달 창이 body에 추가됨');
+
+        // Add event listeners
+        const closeBtn = document.getElementById('closeBulkUserModal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                debugLog('닫기 버튼 클릭됨');
+                document.body.removeChild(modal);
+            });
+        } else {
+            console.error('닫기 버튼을 찾을 수 없음');
+        }
+
+        const cancelBtn = document.getElementById('cancelBulkUsersBtn');
+        if (cancelBtn) {
+            cancelBtn.className = 'btn btn-secondary';
+            cancelBtn.addEventListener('click', () => {
+                debugLog('취소 버튼 클릭됨');
+                document.body.removeChild(modal);
+            });
+        } else {
+            console.error('취소 버튼을 찾을 수 없음');
+        }
+
+        const addBtn = document.getElementById('addBulkUsersBtn');
+        if (addBtn) {
+            addBtn.className = 'btn btn-primary';
+            addBtn.addEventListener('click', async () => {
+                debugLog('추가 버튼 클릭됨');
+                const userInput = document.getElementById('bulkUserInput').value;
+                debugLog('사용자 입력:', userInput);
+                await addMultipleUsers(userInput);
+                document.body.removeChild(modal);
+            });
+        } else {
+            console.error('추가 버튼을 찾을 수 없음');
+        }
+
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                debugLog('모달 바깥 영역 클릭됨');
+                document.body.removeChild(modal);
+            }
+        });
+
+        debugLog('모달 창 이벤트 리스너 등록 완료');
+        console.log('모달 창 이벤트 리스너 등록 완료');
+
+    } catch (error) {
+        console.error('모달 창 생성 중 오류 발생:', error);
+        showToast(`모달 창 생성 실패: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Processes bulk user input and adds multiple users via API.
+ * @param {string} userInput - User input with newline-separated user IDs
+ */
+async function addMultipleUsers(userInput) {
+    if (!userInput || !userInput.trim()) {
+        showToast('입력된 사용자 ID가 없습니다.', 'warning');
+        return;
+    }
+
+    // Split by newlines and filter out empty lines
+    const userIds = userInput.split('\n')
+        .map(id => id.trim())
+        .filter(id => id.length > 0);
+
+    if (userIds.length === 0) {
+        showToast('유효한 사용자 ID가 없습니다.', 'warning');
+        return;
+    }
+
+    // Validate user IDs
+    const invalidIds = userIds.filter(id => {
+        return id.length < 4 || id.length > 20 || !/^[a-zA-Z0-9_]+$/.test(id);
+    });
+
+    if (invalidIds.length > 0) {
+        showToast(`유효하지 않은 사용자 ID가 포함되어 있습니다: ${invalidIds.join(', ')}. 4-20자 영문, 숫자, 언더스코어만 허용됩니다.`, 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/mngr_sett/users/bulk-add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_ids: userIds })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || '사용자 추가 실패');
+        }
+
+        // Show detailed results
+        const successCount = result.success_count || 0;
+        const failedCount = result.failed_count || 0;
+        const failedUsers = result.failed_users || [];
+        const alreadyExistsCount = result.already_exists_count || 0;
+        const alreadyExistsUsers = result.already_exists_users || [];
+
+        let message = `성공적으로 ${successCount}명의 사용자를 추가했습니다.`;
+
+        if (alreadyExistsCount > 0) {
+            message += ` (이미 존재하는 사용자: ${alreadyExistsCount}명 - ${alreadyExistsUsers.join(', ')})`;
+        }
+
+        if (failedCount > 0) {
+            message += ` (기타 오류: ${failedCount}명 - ${failedUsers.join(', ')})`;
+        }
+
+        if (alreadyExistsCount > 0 || failedCount > 0) {
+            showToast(message, 'warning');
+        } else {
+            showToast(message, 'success');
+        }
+
+        // Refresh user table
+        refreshUserManagementTable();
+
+    } catch (error) {
+        showToast(`대량 사용자 추가 실패: ${error.message}`, 'error');
+    }
+}
+
 function addNewSettingRow() {
     const container = document.getElementById('mngr_sett_page');
     if (!container) return;
@@ -2007,116 +2181,148 @@ async function saveDataAccessPermissions() {
 
 // --- END: Data Access Permission Tab Logic ---
 
-export async function init() {
+async function initializePage() {
+    console.log('=== INITIALIZE PAGE CALLED ==='); // 디버그 로그 추가
     const container = document.getElementById('mngr_sett_page');
     if (!container) {
+        console.error('Container not found: mngr_sett_page');
+        return;
+    }
+
+    setupTabs();
+
+    // The color palette is now attached by the main UI module.
+    // 의존성 주입: ui.js가 필요로 하는 event.js의 함수들을 전달
+    initUI({
+        confirmAndDeleteIcon,
+        toggleIconDisplayStatus
+    });
+    initializeIconManagementUI();
+    initDataAccessPermissionTab(); // Initialize the new tab logic
+
+    const addRowBtn = container.querySelector('#addRowBtn');
+    if (addRowBtn) {
+        console.log('AddRowBtn found, adding event listener');
+        addRowBtn.addEventListener('click', addNewSettingRow);
+    } else {
+        console.warn('AddRowBtn not found');
+    }
+
+    const saveAllPermissionsBtn = container.querySelector('#saveAllPermissionsBtn');
+    if (saveAllPermissionsBtn) {
+        console.log('SaveAllPermissionsBtn found, adding event listener');
+        saveAllPermissionsBtn.addEventListener('click', saveAllUserPermissions);
+    } else {
+        console.warn('SaveAllPermissionsBtn not found');
+    }
+
+    const bulkAddUsersBtn = container.querySelector('#bulkAddUsersBtn');
+    if (bulkAddUsersBtn) {
+        console.log('BulkAddUsersBtn found, adding event listener');
+        bulkAddUsersBtn.addEventListener('click', showBulkUserInputModal);
+    } else {
+        console.warn('BulkAddUsersBtn not found');
+    }
+
+    const userManagementTab = container.querySelector('button[data-tab="userManagement"]');
+    if (userManagementTab) {
+        console.log('UserManagementTab found, adding event listener');
+        userManagementTab.addEventListener('click', refreshUserManagementTable);
+    } else {
+        console.warn('UserManagementTab not found');
+    }
+
+    const settingsTab = container.querySelector('button[data-tab="basicSettings"]'); // Changed from "settings" to "basicSettings" to match HTML
+    if (settingsTab) {
+        // The loadPageData function is called at the end, so no need for a click listener here
+    }
+
+    initStatisticsTab();
+
+    const scheduleSettingsTab = container.querySelector('button[data-tab="scheduleSettings"]');
+    if (scheduleSettingsTab) {
+        scheduleSettingsTab.addEventListener('click', loadScheduleSettings);
+    }
+
+    // The save button for schedule settings is inside the tab content, so it doesn't need a listener here.
+    // It's added dynamically in `loadScheduleSettings`.
+    // We need to add the event listener for the save button in init, as the button is always present in the DOM.
+    const saveScheduleBtn = container.querySelector('#saveScheduleSettingsBtn');
+    if (saveScheduleBtn) {
+        saveScheduleBtn.addEventListener('click', saveScheduleSettings);
+    }
+
+    // Add event listeners for buttons that previously used onclick
+    const saveBasicSettingsBtn = container.querySelector('#saveBasicSettingsBtn');
+    if (saveBasicSettingsBtn) saveBasicSettingsBtn.addEventListener('click', saveBasicSettings);
+
+    const exportSettingsBtn = container.querySelector('#exportSettingsBtn');
+    if (exportSettingsBtn) exportSettingsBtn.addEventListener('click', exportSettings);
+
+    const importSettingsBtn = container.querySelector('#importSettingsBtn');
+    if (importSettingsBtn) importSettingsBtn.addEventListener('click', importSettings);
+
+    const saveChartSettingsBtn = container.querySelector('#saveChartSettingsBtn');
+    if (saveChartSettingsBtn) saveChartSettingsBtn.addEventListener('click', saveChartSettings);
+
+    const exportIconsBtn = container.querySelector('#exportIconsBtn');
+    if (exportIconsBtn) exportIconsBtn.addEventListener('click', exportIcons);
+
+    const importIconsBtn = container.querySelector('#importIconsBtn');
+    if (importIconsBtn) importIconsBtn.addEventListener('click', importIcons);
+
+    // 엑셀 템플릿 관리 이벤트 리스너 추가
+    const excelTemplateTab = container.querySelector('button[data-tab="excelTemplateManagement"]');
+    if (excelTemplateTab) {
+        excelTemplateTab.addEventListener('click', loadExcelTemplateInfo);
+    }
+
+    const uploadExcelTemplateBtn = container.querySelector('#uploadExcelTemplateBtn');
+    if (uploadExcelTemplateBtn) {
+        uploadExcelTemplateBtn.addEventListener('click', uploadExcelTemplate);
+    }
+
+    const downloadExcelTemplateBtn = container.querySelector('#downloadExcelTemplateBtn');
+    if (downloadExcelTemplateBtn) {
+        downloadExcelTemplateBtn.addEventListener('click', downloadExcelTemplate);
+    }
+
+    const deleteExcelTemplateBtn = container.querySelector('#deleteExcelTemplateBtn');
+    if (deleteExcelTemplateBtn) {
+        deleteExcelTemplateBtn.addEventListener('click', deleteExcelTemplate);
+    }
+
+    // 초기에 첫 번째 탭(기본 설정)을 활성화하고 데이터를 로드합니다.
+    const firstTab = container.querySelector('.tab-button[data-tab="basicSettings"]');
+    if (firstTab) {
+        // The 'active' class is already on the first tab by default in HTML.
+        // No need to simulate a click, just load the data.
+        firstTab.classList.add('active');
+        const basicSettingsTab = container.querySelector('#basicSettings');
+        if (basicSettingsTab) {
+            basicSettingsTab.classList.add('active');
+        }
+    }
+
+    // 데이터 로드 - F5 새로고침 시에도 보장
+    console.log('=== LOAD PAGE DATA START ==='); // 디버그 로그 추가
+    await loadPageData();
+    console.log('=== LOAD PAGE DATA COMPLETE ==='); // 디버그 로그 추가
+}
+
+export async function init() {
+    console.log('=== INIT FUNCTION CALLED ==='); // 디버그 로그 추가
+    const container = document.getElementById('mngr_sett_page');
+    if (!container) {
+        console.error('Container not found: mngr_sett_page');
         return;
     }
 
     // F5 새로고침 시 init() 함수가 호출되지 않는 근본 원인 해결
     // router.js의 DOMContentLoaded 이벤트 타이밍 문제 해결
     await initializePage();
-
-    async function initializePage() {
-        setupTabs();
-
-        // The color palette is now attached by the main UI module.
-        // 의존성 주입: ui.js가 필요로 하는 event.js의 함수들을 전달
-        initUI({
-            confirmAndDeleteIcon,
-            toggleIconDisplayStatus
-        });
-        initializeIconManagementUI();
-        initDataAccessPermissionTab(); // Initialize the new tab logic
-
-        const addRowBtn = container.querySelector('#addRowBtn');
-        if (addRowBtn) addRowBtn.addEventListener('click', addNewSettingRow);
-
-        const saveAllPermissionsBtn = container.querySelector('#saveAllPermissionsBtn');
-        if (saveAllPermissionsBtn) saveAllPermissionsBtn.addEventListener('click', saveAllUserPermissions);
-
-        const userManagementTab = container.querySelector('button[data-tab="userManagement"]');
-        if (userManagementTab) {
-            userManagementTab.addEventListener('click', refreshUserManagementTable);
-        }
-
-        const settingsTab = container.querySelector('button[data-tab="basicSettings"]'); // Changed from "settings" to "basicSettings" to match HTML
-        if (settingsTab) {
-            // The loadPageData function is called at the end, so no need for a click listener here
-        }
-
-        initStatisticsTab();
-
-        const scheduleSettingsTab = container.querySelector('button[data-tab="scheduleSettings"]');
-        if (scheduleSettingsTab) {
-            scheduleSettingsTab.addEventListener('click', loadScheduleSettings);
-        }
-
-        // The save button for schedule settings is inside the tab content, so it doesn't need a listener here.
-        // It's added dynamically in `loadScheduleSettings`.
-        // We need to add the event listener for the save button in init, as the button is always present in the DOM.
-        const saveScheduleBtn = container.querySelector('#saveScheduleSettingsBtn');
-        if (saveScheduleBtn) {
-            saveScheduleBtn.addEventListener('click', saveScheduleSettings);
-        }
-
-        // Add event listeners for buttons that previously used onclick
-        const saveBasicSettingsBtn = container.querySelector('#saveBasicSettingsBtn');
-        if (saveBasicSettingsBtn) saveBasicSettingsBtn.addEventListener('click', saveBasicSettings);
-
-        const exportSettingsBtn = container.querySelector('#exportSettingsBtn');
-        if (exportSettingsBtn) exportSettingsBtn.addEventListener('click', exportSettings);
-
-        const importSettingsBtn = container.querySelector('#importSettingsBtn');
-        if (importSettingsBtn) importSettingsBtn.addEventListener('click', importSettings);
-
-        const saveChartSettingsBtn = container.querySelector('#saveChartSettingsBtn');
-        if (saveChartSettingsBtn) saveChartSettingsBtn.addEventListener('click', saveChartSettings);
-
-        const exportIconsBtn = container.querySelector('#exportIconsBtn');
-        if (exportIconsBtn) exportIconsBtn.addEventListener('click', exportIcons);
-
-        const importIconsBtn = container.querySelector('#importIconsBtn');
-        if (importIconsBtn) importIconsBtn.addEventListener('click', importIcons);
-
-
-        // 엑셀 템플릿 관리 이벤트 리스너 추가
-        const excelTemplateTab = container.querySelector('button[data-tab="excelTemplateManagement"]');
-        if (excelTemplateTab) {
-            excelTemplateTab.addEventListener('click', loadExcelTemplateInfo);
-        }
-
-        const uploadExcelTemplateBtn = container.querySelector('#uploadExcelTemplateBtn');
-        if (uploadExcelTemplateBtn) {
-            uploadExcelTemplateBtn.addEventListener('click', uploadExcelTemplate);
-        }
-
-        const downloadExcelTemplateBtn = container.querySelector('#downloadExcelTemplateBtn');
-        if (downloadExcelTemplateBtn) {
-            downloadExcelTemplateBtn.addEventListener('click', downloadExcelTemplate);
-        }
-
-        const deleteExcelTemplateBtn = container.querySelector('#deleteExcelTemplateBtn');
-        if (deleteExcelTemplateBtn) {
-            deleteExcelTemplateBtn.addEventListener('click', deleteExcelTemplate);
-        }
-
-        // 초기에 첫 번째 탭(기본 설정)을 활성화하고 데이터를 로드합니다.
-        const firstTab = container.querySelector('.tab-button[data-tab="basicSettings"]');
-        if (firstTab) {
-            // The 'active' class is already on the first tab by default in HTML.
-            // No need to simulate a click, just load the data.
-            firstTab.classList.add('active');
-            const basicSettingsTab = container.querySelector('#basicSettings');
-            if (basicSettingsTab) {
-                basicSettingsTab.classList.add('active');
-            }
-        }
-
-        // 데이터 로드 - F5 새로고침 시에도 보장
-        await loadPageData();
-    }
 }
+
 
 // --- START: Excel Template Management Functions ---
 
