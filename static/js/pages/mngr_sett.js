@@ -15,6 +15,7 @@ import { stateManager } from '../services/stateManager.js';
 import { statisticsTab } from '../tabs/statistics.js';
 import { userManagementTab } from '../tabs/userManagement.js';
 import { dataAccessTab } from '../tabs/dataAccess.js';
+import { init as initDataDefinition } from '../tabs/dataDefinition.js';
 
 // 외부 모듈들 가져오기
 import { setDataFlowStatus } from '../modules/common/api/client.js';
@@ -524,6 +525,15 @@ async function initializePage() {
     dataAccessTab.initElements();
     dataAccessTab.initEventListeners();
 
+    // 데이터정의 탭 초기화 (조건부)
+    const dataDefinitionContainer = document.getElementById('dataDefinition');
+    if (dataDefinitionContainer) {
+        console.log('🔍 mngr_sett.js: dataDefinitionContainer found, but NOT calling init yet');
+        // 탭 전환 시점에 초기화하도록 defer
+    } else {
+        console.warn('⚠️ mngr_sett.js: dataDefinitionContainer not found');
+    }
+
     const addRowBtn = container.querySelector('#addRowBtn');
     if (addRowBtn) {
         console.log('AddRowBtn found, adding event listener');
@@ -540,6 +550,15 @@ async function initializePage() {
     const scheduleSettingsTab = container.querySelector('button[data-tab="scheduleSettings"]');
     if (scheduleSettingsTab) {
         scheduleSettingsTab.addEventListener('click', loadScheduleSettings);
+    }
+
+    // 데이터정의 탭 전환 시 초기화
+    const dataDefinitionTab = container.querySelector('button[data-tab="dataDefinition"]');
+    if (dataDefinitionTab) {
+        dataDefinitionTab.addEventListener('click', () => {
+            console.log('🔍 Tab clicked: dataDefinition, calling init');
+            initDataDefinition();
+        });
     }
 
     // The save button for schedule settings is inside the tab content, so it doesn't need a listener here.

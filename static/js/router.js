@@ -1,5 +1,8 @@
 const mainContent = document.getElementById('main-content');
 
+// 페이지 초기화 상태를 추적하는 변수
+let isPageInitialized = false;
+
 async function fetchPage(url) {
     try {
         const response = await fetch(url, {

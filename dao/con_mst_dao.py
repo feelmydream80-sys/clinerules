@@ -33,6 +33,31 @@ class ConMstDAO:
             logging.error(f"❌ 모든 MST 데이터 로드 실패: {e}", exc_info=True)
             return []
 
+    def get_all_mst_full(self) -> list[dict]:
+        """
+        tb_con_mst에서 모든 마스터 데이터를 가져옵니다. (전체 데이터)
+        컬럼명을 모두 소문자로 변환하여 dict로 반환합니다.
+        """
+        try:
+            with self.conn.cursor() as cur:
+                query = load_sql('mst/get_all_mst_full.sql')
+                logging.info(f"🔍 tb_con_mst SQL 쿼리 실행: {query}")
+                cur.execute(query)
+                columns = [desc[0].lower() for desc in cur.description]
+                logging.info(f"🔍 tb_con_mst SQL 컬럼명: {columns}")
+                results = cur.fetchall()
+                logging.info(f"🔍 tb_con_mst SQL 결과 개수: {len(results)}")
+                
+                # 처음 5개 결과 로그
+                for i, row in enumerate(results[:5]):
+                    logging.info(f"🔍 tb_con_mst SQL 결과 {i+1}: {dict(zip(columns, row))}")
+                
+                data = [dict(zip(columns, row)) for row in results]
+                return convert_to_legacy_columns('TB_CON_MST', data)
+        except Exception as e:
+            logging.error(f"❌ 모든 MST 데이터 로드 실패: {e}", exc_info=True)
+            return []
+
     # ✅ 추가: 특정 cd에 해당하는 cd_nm과 item2를 조회하는 메서드
     def get_mst_data_by_cd(self, cd: str) -> Optional[dict]:
         """

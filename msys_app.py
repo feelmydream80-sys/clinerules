@@ -138,6 +138,11 @@ def create_app():
     # 인증 미들웨어 설정
     setup_auth_middleware(app, config.AUTH_ENABLED)
 
+    # Mock HTML 파일 제공 라우트 추가
+    @app.route('/data_definition_api_mock.html')
+    def serve_mock_html():
+        return app.send_static_file('data_definition_api_mock.html')
+
     return app
 
 if __name__ == '__main__':

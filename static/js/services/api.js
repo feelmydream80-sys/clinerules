@@ -223,6 +223,56 @@ export const scheduleSettingsApi = {
     }
 };
 
+// 데이터정의 탭에서 사용할 전용 API 함수들
+export const dataDefinitionApi = {
+    /**
+     * 전체 데이터 목록 가져오기
+     * @returns {Promise<any>} - 전체 데이터 목록
+     */
+    async getDataGroups() {
+        return await ApiService.get('data_definition/groups');
+    },
+
+    /**
+     * 데이터 생성
+     * @param {object} data - 생성할 데이터
+     * @returns {Promise<any>} - 응답 데이터
+     */
+    async createData(data) {
+        return await ApiService.post('data_definition/create', data);
+    },
+
+    /**
+     * 관리자 설정 데이터 생성
+     * @param {string} cd - 생성할 데이터의 CD
+     * @returns {Promise<any>} - 응답 데이터
+     */
+    async createMngrSett(cd) {
+        return await ApiService.post('data_definition/create_mngr_sett', { cd });
+    },
+
+    /**
+     * 데이터 수정
+     * @param {string} cdCl - CD_CL
+     * @param {string} cd - CD
+     * @param {object} data - 수정할 데이터
+     * @returns {Promise<any>} - 응답 데이터
+     */
+    async updateData(cdCl, cd, data) {
+        return await ApiService.post(`data_definition/update/${cdCl}/${cd}`, data);
+    },
+
+    /**
+     * 데이터 삭제
+     * @param {string} cdCl - CD_CL
+     * @param {string} cd - CD
+     * @returns {Promise<any>} - 응답 데이터
+     */
+    async deleteData(cdCl, cd) {
+        return await ApiService.delete(`data_definition/delete/${cdCl}/${cd}`);
+    }
+};
+
 // 엑셀 템플릿 관리에서 사용할 전용 API 함수들
 export const excelTemplateApi = {
     /**

@@ -1,0 +1,1 @@
+DELETE FROM tb_con_mst WHERE cd_cl = %s AND cd = %s;

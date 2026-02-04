@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}관리자 설정{% endblock %}
+{% block title %}{% endblock %}
 
 {% block head %}
 {% endblock %}
@@ -178,7 +178,7 @@
         }
 
         #mngr_sett_page .settings-table th, #mngr_sett_page .settings-table td {
-            border: 1px solid #e0e0e0;
+            border: 1px dashed #e0e0e0; /* 점선 테두리로 변경 */
             padding: 10px 8px;
             text-align: center;
             white-space: nowrap; /* 셀 내용이 줄바꿈되지 않도록 */
@@ -583,6 +583,209 @@
             color: #007bff;
         }
 
+        /* 데이터 정의 카드 스타일 */
+        :root {
+            --space-1: 16px;
+            --space-2: 24px;
+            --space-3: 32px;
+        }
+
+        /* 카드 그리드 레이아웃 */
+        .card-grid-legacy {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: var(--space-1);
+            position: relative;
+            min-height: 100px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.2s, border 0.2s;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+        }
+
+        .card.selected {
+            border-color: #10b981;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1a3c6b;
+        }
+
+        .status-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            flex: 1;
+            min-width: 80px;
+            text-align: center;
+            padding: 8px 4px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: #e6f7ee;
+            color: #1e8a4a;
+        }
+
+        .status-fail {
+            background: #fce8e8;
+            color: #c53030;
+        }
+
+        /* 상세 패널 스타일 */
+        .detail-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-top: var(--space-2);
+            display: none;
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .detail-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a3c6b;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            font-size: 14px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #2563eb;
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background-color: #dc2626;
+        }
+
+        /* 테이블 스타일 */
+        .detail-panel table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .detail-panel th, .detail-panel td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .detail-panel th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .detail-panel tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        /* 비활성 상태 스타일 */
+        .inactive-row {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        .inactive-text {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        /* 로딩 및 에러 상태 */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+
+        .error {
+            background-color: #fee2e2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .card-grid-legacy {
+                grid-template-columns: 1fr;
+            }
+            
+            .detail-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .action-buttons {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+
         /* Data Access Permission Modal Styles */
         .modal {
             display: none;
@@ -755,6 +958,7 @@
                 <button class="tab-button" data-tab="dataAccessPermission">데이터 접근 권한</button>
                 <button class="tab-button" data-tab="excelTemplateManagement">엑셀 양식 관리</button>
                 <button class="tab-button" data-tab="statistics">통계</button>
+                <button class="tab-button" data-tab="dataDefinition">데이터정의</button>
             </div>
 
 
@@ -1142,6 +1346,181 @@
                     <h3 class="text-lg font-semibold mb-2">접속 통계 차트</h3>
                     <div class="chart-container">
                         <canvas id="accessStatsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dataDefinition" class="tab-content">
+                <!-- 메인 화면 버튼 영역 -->
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-700">데이터 정의</h2>
+                    <div class="flex gap-2">
+                        <button id="addGroupBtn" class="save">그룹 추가</button>
+                        <button id="editGroupBtn" class="save">그룹 수정</button>
+                        <button id="deleteGroupBtn" class="save">그룹 삭제</button>
+                    </div>
+                </div>
+
+                <!-- 데이터 정의 - 100번대 그룹 관리 -->
+                <div class="card-grid-legacy" id="definitionCardContainer">
+                    <div class="loading">로딩 중...</div>
+                </div>
+
+                <!-- 선택된 그룹의 상세 정보 영역 -->
+                <div class="detail-panel" id="detailPanel">
+                    <div class="detail-header">
+                        <div class="detail-title" id="selectedGroupTitle">선택된 그룹</div>
+                        <div class="action-buttons" id="buttonContainer">
+                            <!-- 버튼이 동적으로 추가됨 -->
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>코드</th>
+                                <th>명칭</th>
+                                <th>사용여부</th>
+                                <th>수정일시</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailTableBody">
+                            <!-- 상세 데이터 동적 생성 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 그룹 추가 모달 -->
+                <div class="modal fade" id="addGroupModal" tabindex="-1" aria-labelledby="addGroupModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="addGroupModalLabel">그룹 추가</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addGroupForm">
+                                    <!-- 상단 섹션 -->
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupCdCl" class="form-label">그룹 구분</label>
+                                                <input type="text" class="form-control" id="addGroupCdCl" name="cd_cl" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupCd" class="form-label">그룹 코드</label>
+                                                <input type="text" class="form-control" id="addGroupCd" name="cd" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupCdNm" class="form-label">그룹 명</label>
+                                                <input type="text" class="form-control" id="addGroupCdNm" name="cd_nm" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupCdDesc" class="form-label">그룹 설명</label>
+                                                <input type="text" class="form-control" id="addGroupCdDesc" name="cd_desc" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 아이템 섹션 -->
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupItem1" class="form-label">아이템1</label>
+                                                <input type="text" class="form-control" id="addGroupItem1" name="item1">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupItem2" class="form-label">아이템2</label>
+                                                <input type="text" class="form-control" id="addGroupItem2" name="item2">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="addGroupItem3" class="form-label">아이템3</label>
+                                                <textarea class="form-control" id="addGroupItem3" name="item3" rows="3"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupItem4" class="form-label">아이템4</label>
+                                                <input type="text" class="form-control" id="addGroupItem4" name="item4">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupItem5" class="form-label">아이템5</label>
+                                                <input type="text" class="form-control" id="addGroupItem5" name="item5">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupItem6" class="form-label">아이템6</label>
+                                                <input type="text" class="form-control" id="addGroupItem6" name="item6">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupItem7" class="form-label">아이템7</label>
+                                                <input type="text" class="form-control" id="addGroupItem7" name="item7">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupItem8" class="form-label">아이템8</label>
+                                                <input type="text" class="form-control" id="addGroupItem8" name="item8">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupItem9" class="form-label">아이템9</label>
+                                                <input type="text" class="form-control" id="addGroupItem9" name="item9">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 하단 섹션 -->
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="addGroupItem10" class="form-label">아이템10</label>
+                                                <input type="text" class="form-control" id="addGroupItem10" name="item10">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="addGroupUseYn" name="use_yn" value="Y" checked>
+                                                    <label class="form-check-label" for="addGroupUseYn">
+                                                        사용여부
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                                <button type="button" class="btn btn-primary" id="saveGroupBtn">저장</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

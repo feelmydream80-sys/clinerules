@@ -10,6 +10,7 @@ def init_app(app):
     from .api.analysis_api import analysis_api_bp
     from .api.auth_api import auth_api_bp
     from .api.card_summary_api import card_summary_api_bp
+    from .api.data_definition_api import bp as data_definition_api_bp
     from .ui import dashboard_routes, collection_schedule_routes
     from . import mapping_routes
     from . import admin_routes
@@ -35,3 +36,4 @@ def init_app(app):
     app.register_blueprint(card_summary_routes.card_summary_bp)
     app.register_blueprint(data_report_routes.data_report_bp)
     app.register_blueprint(today_routes.today_bp)
+    app.register_blueprint(data_definition_api_bp)
