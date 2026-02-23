@@ -22,8 +22,14 @@ function debounce(func, delay) {
 export async function init() {
     console.log('데이터 정의 탭 초기화');
     
-    // 항상 전역 상태 초기화
-    isInitialized = false;
+    // 중복 호출 방지
+    if (isInitialized) {
+        console.log('데이터 정의 탭이 이미 초기화되어 있습니다.');
+        return;
+    }
+    
+    // 전역 상태 초기화
+    isInitialized = true;
     selectedGroup = null;
     selectedRow = null;
     isModalOpen = false;
@@ -47,13 +53,29 @@ export async function init() {
     }
     
     // API 데이터로 카드 렌더링
-    await renderGroupCards();
-    
-    console.log('데이터 정의 탭 초기화 완료');
+    try {
+        await renderGroupCards();
+        console.log('데이터 정의 탭 초기화 완료');
+    } catch (error) {
+        console.error('데이터 정의 탭 초기화 실패:', error);
+        // 오류 발생시 사용자에게 알림
+        const container = document.getElementById('definitionCardContainer');
+        container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;">데이터 정의 탭 초기화에 실패했습니다. 페이지를 새로고침해 주세요.</div>';
+    } finally {
+        // 초기화 완료 후 (성공/실패 모두) 플래그를 false로 설정
+        isInitialized = false;
+    }
 }
 
 // UI 요소 초기화 함수
 function setupUIElements() {
+    // 기존 검색 UI가 있는지 확인하여 중복 생성 방지
+    const existingSearchContainer = document.getElementById('dataDefinitionSearch')?.parentElement;
+    if (existingSearchContainer) {
+        console.log('검색 UI가 이미 존재하므로 중복 생성을 방지합니다.');
+        return;
+    }
+    
     // 검색 UI 추가
     const searchContainer = document.createElement('div');
     searchContainer.style.cssText = 'margin-bottom: 20px; display: flex; gap: 15px; align-items: center;';
@@ -169,7 +191,7 @@ async function renderGroupCards() {
                 if (cd_cl && /^CD\d*00$/.test(cd_cl)) {
                     if (!groupedData[cd_cl]) {
                         const groupHeader = allData.find(headerItem => 
-                            headerItem.cd_cl === cd_cl && headerItem.CD === cd_cl
+                            headerItem.cd_cl === cd_cl && headerItem.cd === cd_cl
                         );
                         
                         const groupName = groupHeader ? groupHeader.cd_nm : item.cd_nm;
@@ -189,7 +211,7 @@ async function renderGroupCards() {
             
             allData.forEach(item => {
                 const cd_cl = item.cd_cl;
-                const cdValue = item.CD;
+                const cdValue = item.cd;
                 
                 if (cdValue && !/^CD\d*00$/.test(cdValue)) {
                     if (groupedData[cd_cl]) {
@@ -216,6 +238,7 @@ async function renderGroupCards() {
             groups.forEach(group => {
                 const card = document.createElement('div');
                 card.className = 'card';
+                card.dataset.cd = group.cd; // 데이터 속성으로 그룹 코드 저장
                 
                 if (group.use_yn && group.use_yn.trim() === 'N') {
                     card.className = 'card inactive-group';
@@ -255,17 +278,24 @@ async function renderGroupCards() {
 function selectGroup(group) {
     document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
     
-    const selectedCard = event.currentTarget;
-    selectedCard.classList.add('selected');
+    // 데이터 속성으로 정확한 카드 찾기
+    const selectedCard = document.querySelector(`.card[data-cd="${group.cd}"]`);
     
-    selectedGroup = group;
-    
-    loadGroupDetails(group.cd);
+    if (selectedCard) {
+        selectedCard.classList.add('selected');
+        selectedGroup = group;
+        loadGroupDetails(group.cd);
+    } else {
+        console.error('선택된 카드를 찾을 수 없습니다:', group.cd);
+    }
 }
 
 // 3. 그룹 상세 정보 로드 및 렌더링
 async function loadGroupDetails(groupCd) {
     console.log(`그룹 상세 정보 로드 시작: ${groupCd}`);
+    
+    // selectedRow 상태 초기화 (새 그룹을 선택하면 이전 선택된 행이 초기화됨)
+    selectedRow = null;
     
     const detailPanel = document.getElementById('detailPanel');
     const selectedGroupTitle = document.getElementById('selectedGroupTitle');
@@ -278,13 +308,13 @@ async function loadGroupDetails(groupCd) {
         allData = await getGroups();
     }
     
-    const groupDetails = allData.filter(item => item.cd_cl === groupCd && item.CD !== groupCd) || [];
+    const groupDetails = allData.filter(item => item.cd_cl === groupCd && item.cd !== groupCd) || [];
 
     updateDetailTableHeader();
 
     if (groupDetails.length > 0) {
         groupDetails
-            .sort((a, b) => a.CD.localeCompare(b.CD))
+            .sort((a, b) => a.cd.localeCompare(b.cd))
             .forEach(item => {
                 const row = renderDetailRow(item);
                 detailTableBody.appendChild(row);
@@ -336,26 +366,11 @@ async function loadGroupDetails(groupCd) {
                 showToast('데이터를 선택해주세요.', TOAST_TYPES.WARNING);
             }
         });
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.id = 'deleteBtn';
-        deleteBtn.textContent = '삭제';
-        deleteBtn.className = 'btn';
-        deleteBtn.style.cssText = 'padding: 10px 20px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer;';
-        deleteBtn.disabled = true;
-        deleteBtn.addEventListener('click', () => {
-            if (selectedRow) {
-                showDeleteConfirm(selectedRow.item);
-            } else {
-                showToast('데이터를 선택해주세요.', TOAST_TYPES.WARNING);
-            }
-        });
 
         buttonContainer.appendChild(activateBtn);
         buttonContainer.appendChild(deactivateBtn);
         buttonContainer.appendChild(addDetailBtn);
         buttonContainer.appendChild(editBtn);
-        buttonContainer.appendChild(deleteBtn);
     }
     
     updateActionButtons();
@@ -373,8 +388,8 @@ async function deactivateSelectedItems() {
         selectedItems.push(cd);
     });
     
-    if (selectedItems.length < 2) {
-        showToast('비활성화할 항목을 2개 이상 선택해주세요.', TOAST_TYPES.WARNING);
+    if (selectedItems.length < 1) {
+        showToast('비활성화할 항목을 선택해주세요.', TOAST_TYPES.WARNING);
         return;
     }
     
@@ -442,8 +457,8 @@ async function activateSelectedItems() {
         selectedItems.push(cd);
     });
     
-    if (selectedItems.length < 2) {
-        showToast('활성화할 항목을 2개 이상 선택해주세요.', TOAST_TYPES.WARNING);
+    if (selectedItems.length < 1) {
+        showToast('활성화할 항목을 선택해주세요.', TOAST_TYPES.WARNING);
         return;
     }
     
@@ -484,7 +499,7 @@ function renderDetailRow(item) {
     
     row.innerHTML = `
         <td><input type="checkbox" onchange="updateActionButtons()"></td>
-        <td>${item.CD}</td>
+        <td>${item.cd}</td>
         <td>${item.cd_nm}</td>
         <td>${item.cd_desc || ''}</td>
         <td>${(item.use_yn && item.use_yn.trim() === 'Y') ? '사용중' : '사용안함'}</td>
@@ -507,7 +522,6 @@ function selectDetailRow(row, item) {
 // 6. 액션 버튼 상태 업데이트
 function updateActionButtons() {
     const editBtn = document.getElementById('editBtn');
-    const deleteBtn = document.getElementById('deleteBtn');
     const activateBtn = document.getElementById('activateBtn');
     const deactivateBtn = document.getElementById('deactivateBtn');
     const addDetailBtn = document.querySelector('#buttonContainer .btn-primary');
@@ -518,20 +532,12 @@ function updateActionButtons() {
     
     const selectedCheckboxes = document.querySelectorAll('#detailTableBody input[type="checkbox"]:checked');
     const hasSelectedCheckboxes = selectedCheckboxes.length > 0;
-    const hasMultipleSelected = selectedCheckboxes.length >= 2;
     
-    if (hasMultipleSelected) {
+    if (hasSelectedCheckboxes) {
         activateBtn.disabled = false;
         deactivateBtn.disabled = false;
         addDetailBtn.disabled = true;
         editBtn.disabled = true;
-        deleteBtn.disabled = true;
-    } else if (hasSelectedCheckboxes) {
-        activateBtn.disabled = true;
-        deactivateBtn.disabled = true;
-        addDetailBtn.disabled = false;
-        editBtn.disabled = false;
-        deleteBtn.disabled = false;
     } else {
         activateBtn.disabled = true;
         deactivateBtn.disabled = true;
@@ -539,10 +545,8 @@ function updateActionButtons() {
         
         if (selectedRow) {
             editBtn.disabled = false;
-            deleteBtn.disabled = false;
         } else {
             editBtn.disabled = true;
-            deleteBtn.disabled = true;
         }
     }
     
@@ -558,7 +562,6 @@ function setupEventListeners() {
     setupEventListeners.hasRun = true;
 
     const editBtn = document.getElementById('editBtn');
-    const deleteBtn = document.getElementById('deleteBtn');
 
     if (editBtn) {
         editBtn.addEventListener('click', () => {
@@ -569,26 +572,12 @@ function setupEventListeners() {
             }
         });
     }
-
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', () => {
-            if (selectedRow) {
-                showDeleteConfirm(selectedRow.item);
-            } else {
-                showToast('데이터를 선택해주세요.', TOAST_TYPES.WARNING);
-            }
-        });
-    }
 }
 setupEventListeners.hasRun = false;
 
 // 8. 그룹 액션 버튼 설정
 function setupGroupActionButtons() {
-    if (setupGroupActionButtons.hasRun) {
-        return;
-    }
-    setupGroupActionButtons.hasRun = true;
-
+    // setupGroupActionButtons.hasRun 플래그 제거하여 항상 이벤트 리스너를 재설정하도록 변경
     console.log('setupGroupActionButtons 함수 실행');
     
     const addGroupBtn = document.getElementById('addGroupBtn');
@@ -601,43 +590,45 @@ function setupGroupActionButtons() {
     console.log('deleteGroupBtn:', deleteGroupBtn);
 
     if (addGroupBtn) {
-        const newAddGroupBtn = addGroupBtn.cloneNode(true);
-        addGroupBtn.parentNode.replaceChild(newAddGroupBtn, addGroupBtn);
-        
-        console.log('addGroupBtn 버튼에 이벤트 리스너 등록');
-        newAddGroupBtn.addEventListener('click', () => {
-            console.log('addGroupBtn 버튼 클릭 감지');
-            showAddGroupModal();
-        });
+        // 기존 이벤트 리스너 제거 후 새로 추가
+        addGroupBtn.removeEventListener('click', handleAddGroupClick);
+        addGroupBtn.addEventListener('click', handleAddGroupClick);
     }
 
     if (editGroupBtn) {
-        const newEditGroupBtn = editGroupBtn.cloneNode(true);
-        editGroupBtn.parentNode.replaceChild(newEditGroupBtn, editGroupBtn);
-        
-        newEditGroupBtn.addEventListener('click', () => {
-            if (selectedGroup) {
-                showEditGroupModal(selectedGroup);
-            } else {
-                alert('수정할 그룹을 먼저 선택해주세요.');
-            }
-        });
+        // 기존 이벤트 리스너 제거 후 새로 추가
+        editGroupBtn.removeEventListener('click', handleEditGroupClick);
+        editGroupBtn.addEventListener('click', handleEditGroupClick);
     }
 
     if (deleteGroupBtn) {
-        const newDeleteGroupBtn = deleteGroupBtn.cloneNode(true);
-        deleteGroupBtn.parentNode.replaceChild(newDeleteGroupBtn, deleteGroupBtn);
-        
-        newDeleteGroupBtn.addEventListener('click', () => {
-            if (selectedGroup) {
-                showDeleteGroupConfirm(selectedGroup);
-            } else {
-                alert('삭제할 그룹을 먼저 선택해주세요.');
-            }
-        });
+        // 기존 이벤트 리스너 제거 후 새로 추가
+        deleteGroupBtn.removeEventListener('click', handleDeleteGroupClick);
+        deleteGroupBtn.addEventListener('click', handleDeleteGroupClick);
     }
 }
-setupGroupActionButtons.hasRun = false;
+
+// 그룹 액션 버튼 클릭 핸들러 함수들
+function handleAddGroupClick() {
+    console.log('addGroupBtn 버튼 클릭 감지');
+    showAddGroupModal();
+}
+
+function handleEditGroupClick() {
+    if (selectedGroup) {
+        showEditGroupModal(selectedGroup);
+    } else {
+        alert('수정할 그룹을 먼저 선택해주세요.');
+    }
+}
+
+function handleDeleteGroupClick() {
+    if (selectedGroup) {
+        showDeleteGroupConfirm(selectedGroup);
+    } else {
+        alert('삭제할 그룹을 먼저 선택해주세요.');
+    }
+}
 
 // 9. 그룹 추가 모달 표시 (tb_con_mst 스키마 기반)
 async function showAddGroupModal() {
@@ -675,7 +666,7 @@ async function showAddGroupModal() {
         const item9 = document.getElementById('newGroupItem9').value.trim();
         const item10 = document.getElementById('newGroupItem10').value.trim();
 
-        const existingGroup = allData.find(item => item.CD === cd && item.use_yn === 'N');
+        const existingGroup = allData.find(item => item.cd === cd && item.use_yn === 'N');
         
         if (existingGroup) {
             const confirmActivate = confirm(`이 그룹은 이미 비활성화된 상태입니다.\n그룹을 활성화하시겠습니까?`);
@@ -766,7 +757,7 @@ async function showAddGroupModal() {
                 isValid = false;
             } else {
                 document.getElementById('newGroupCdClFormatError').style.display = 'none';
-                const exists = allData.some(item => item.CD === 'CD' + cdClValue);
+                const exists = allData.some(item => item.cd === 'CD' + cdClValue);
                 if (exists) {
                     document.getElementById('newGroupCdClError').style.display = 'block';
                     cdClInput.style.borderColor = '#dc3545';
@@ -790,7 +781,7 @@ async function showAddGroupModal() {
                     isValid = false;
                 } else {
                     document.getElementById('newGroupCdRangeError').style.display = 'none';
-                    const exists = allData.some(item => item.CD === 'CD' + cdValue);
+                    const exists = allData.some(item => item.cd === 'CD' + cdValue);
                     if (exists) {
                         document.getElementById('newGroupCdError').style.display = 'block';
                         cdInput.style.borderColor = '#dc3545';
@@ -821,7 +812,11 @@ async function showEditGroupModal(group) {
         if (!allData) {
             allData = await getGroups();
         }
-        const groupHeader = allData.find(item => item.cd_cl === group.cd && item.CD === group.cd);
+        
+        // groupHeader를 찾을 때 대소문자 구분 없이 검색하거나 더 정확한 조건 사용
+        const groupHeader = allData.find(item => 
+            item.cd_cl === group.cd && item.cd === group.cd
+        );
         
         console.log('그룹 수정 모달 사용 데이터:', {
             group: group,
@@ -830,7 +825,21 @@ async function showEditGroupModal(group) {
             trimmed_use_yn: group.use_yn ? group.use_yn.trim() : 'undefined'
         });
         
-        createModal(getEditGroupModalHTML(group, groupHeader), {
+        // groupHeader가 없을 경우 직접 API 호출로 그룹 헤더 데이터를 가져오기
+        let safeGroupHeader = groupHeader;
+        if (!safeGroupHeader) {
+            console.log('groupHeader가 없어 직접 API 호출로 데이터 가져오기');
+            const response = await fetch(`/api/data_definition/groups`);
+            if (response.ok) {
+                const data = await response.json();
+                console.log('API에서 가져온 데이터:', data);
+                safeGroupHeader = data.find(item => item.cd_cl === group.cd && item.cd === group.cd) || {};
+            } else {
+                safeGroupHeader = {};
+            }
+        }
+        
+        createModal(getEditGroupModalHTML(group, safeGroupHeader), {
             title: '그룹 수정',
             width: '800px',
             onSave: async () => {
@@ -890,6 +899,14 @@ async function showDeleteGroupConfirm(group) {
                 alert('그룹이 사용안함으로 변경되었습니다.');
                 allData = await getGroups(); // 전역 데이터 재로드
                 await renderGroupCards();
+                // 상세 패널 숨기기 (그룹이 삭제되면 상세 정보도 숨김)
+                const detailPanel = document.getElementById('detailPanel');
+                if (detailPanel) {
+                    detailPanel.style.display = 'none';
+                }
+                // 선택된 그룹 상태 초기화
+                selectedGroup = null;
+                selectedRow = null;
             } catch (error) {
                 console.error('그룹 삭제 실패:', error);
                 alert('그룹 삭제에 실패했습니다.');
@@ -900,12 +917,30 @@ async function showDeleteGroupConfirm(group) {
 // 12. 수정 모달 표시
 async function showEditModal(item) {
     try {
+        console.log('상세 수정 모달 표시 시작:', item);
         let groupItemFields = [];
-        if (!allData) {
+        
+        // allData가 없거나 유효하지 않은 경우 API로 다시 가져오기
+        if (!allData || !Array.isArray(allData) || allData.length === 0) {
+            console.log('allData가 없거나 유효하지 않아 API로 다시 가져오기');
             allData = await getGroups();
         }
         
-        const groupHeader = allData.find(header => header.cd_cl === item.cd_cl && header.CD === item.cd_cl);
+        // groupHeader 찾기
+        let groupHeader = allData.find(header => header.cd_cl === item.cd_cl && header.cd === item.cd_cl);
+        
+        // groupHeader를 찾지 못한 경우 API로 직접 가져오기
+        if (!groupHeader) {
+            console.log('groupHeader를 찾지 못해 직접 API 호출로 가져오기');
+            const response = await fetch(`/api/data_definition/groups`);
+            if (response.ok) {
+                const data = await response.json();
+                groupHeader = data.find(header => header.cd_cl === item.cd_cl && header.cd === item.cd_cl);
+            }
+        }
+        
+        console.log('찾은 groupHeader:', groupHeader);
+        
         if (groupHeader) {
             const itemFields = ['item1', 'item2', 'item3', 'item4', 'item5', 'item6', 'item7', 'item8', 'item9', 'item10'];
             itemFields.forEach(key => {
@@ -919,8 +954,10 @@ async function showEditModal(item) {
             });
         }
         
-        createModal(getDetailModalHTML(`${item.CD} - ${item.cd_nm} 수정`, item, groupItemFields), {
-            title: `${item.CD} - ${item.cd_nm} 수정`,
+        console.log('groupItemFields:', groupItemFields);
+        
+        createModal(getDetailModalHTML(`${item.cd} - ${item.cd_nm} 수정`, item, groupItemFields), {
+            title: `${item.cd} - ${item.cd_nm} 수정`,
             onSave: async () => {
                 const cd_nm = document.getElementById('editDetailNm').value.trim();
                 const cd_desc = document.getElementById('editDetailDesc').value.trim();
@@ -938,7 +975,7 @@ async function showEditModal(item) {
 
                 const updateData = {
                     cd_cl: item.cd_cl,
-                    cd: item.CD,
+                    cd: item.cd,
                     cd_nm: cd_nm,
                     cd_desc: cd_desc || '',
                     ...itemValues,
@@ -946,7 +983,7 @@ async function showEditModal(item) {
                 };
 
                 try {
-                    await updateDetail(item.CD, updateData);
+                    await updateDetail(item.cd, updateData);
                     alert('데이터가 수정되었습니다.');
                     allData = await getGroups(); // 전역 데이터 재로드
                     await loadGroupDetails(selectedGroup.cd);
@@ -958,28 +995,8 @@ async function showEditModal(item) {
             }
         });
     } catch (error) {
-        console.log('상세 데이터 로드 실패:', error);
+        console.error('상세 데이터 로드 실패:', error);
         alert('상세 데이터를 불러오는데 실패했습니다.');
-    }
-}
-
-// 13. 삭제 확인 표시
-async function showDeleteConfirm(item) {
-    const confirmDelete = confirm(
-        `코드: ${item.CD}\n명칭: ${item.cd_nm}\n\n이 항목을 삭제하시겠습니까?\n(사용여부가 'N'으로 변경됩니다)`
-    );
-    
-    if (confirmDelete) {
-        try {
-            await updateDetail(item.CD, { use_yn: 'N', cd_cl: item.cd_cl });
-            showToast('삭제 처리가 완료되었습니다.', TOAST_TYPES.SUCCESS);
-            allData = await getGroups(); // 전역 데이터 재로드
-            await loadGroupDetails(selectedGroup.cd);
-            await renderGroupCards(); // 그룹 카드 리로드
-        } catch (error) {
-            console.error('삭제 실패:', error);
-            showToast('삭제 처리에 실패했습니다.', TOAST_TYPES.ERROR);
-        }
     }
 }
 
@@ -991,7 +1008,7 @@ async function showAddDetailModal(group) {
             allData = await getGroups();
         }
         
-        const groupHeader = allData.find(item => item.cd_cl === group.cd && item.CD === group.cd);
+        const groupHeader = allData.find(item => item.cd_cl === group.cd && item.cd === group.cd);
         if (groupHeader) {
             const itemFields = ['item1', 'item2', 'item3', 'item4', 'item5', 'item6', 'item7', 'item8', 'item9', 'item10'];
             itemFields.forEach(key => {
@@ -1057,7 +1074,7 @@ async function showAddDetailModal(group) {
                     isValid = false;
                 } else {
                     const cd = 'CD' + cdValue;
-                    const exists = allData.some(item => item.cd_cl === group.cd && item.CD === cd);
+                    const exists = allData.some(item => item.cd_cl === group.cd && item.cd === cd);
                     console.log('cd exists:', exists);
                     if (exists) {
                         console.log('cd가 이미 존재함');
@@ -1148,7 +1165,7 @@ async function checkGroupCodeDuplicate(inputId) {
             allData = await getGroups();
         }
         
-        const exists = allData.some(item => item.CD === code);
+        const exists = allData.some(item => item.cd === code);
         
         if (exists) {
             errorElement.style.display = 'block';

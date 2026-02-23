@@ -255,6 +255,26 @@ export function formatNumberWithKoreanUnits(number) {
 }
 
 /**
+ * tb_con_mst 데이터에서 use_yn === 'Y'인 항목만 필터링합니다.
+ * @param {Array} data - tb_con_mst 데이터 배열
+ * @returns {Array} use_yn === 'Y'인 데이터 배열
+ */
+export function filterActiveMstData(data) {
+    if (!Array.isArray(data)) {
+        console.warn('filterActiveMstData: Input is not an array');
+        return [];
+    }
+    
+    const activeData = data.filter(item => {
+        // use_yn이 'Y'이거나 undefined일 경우는 기본적으로 활성화 처리
+        return item.use_yn === undefined || item.use_yn === null || item.use_yn.trim().toUpperCase() === 'Y';
+    });
+    
+    console.debug(`filterActiveMstData: ${data.length} -> ${activeData.length} items filtered`);
+    return activeData;
+}
+
+/**
  * Job ID 목록을 규칙에 따라 필터링합니다.
  * - 100의 배수인 Job ID 제외
  * - 900-910 범위의 Job ID 제외

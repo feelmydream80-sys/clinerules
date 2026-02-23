@@ -41,9 +41,25 @@ class DashboardService:
         if allowed_job_ids is not None and not allowed_job_ids:
             return []
 
-        # 3. Combine historical data with today's schedule
+        # 3. Filter by use_yn = 'Y' from tb_con_mst
+        from mapper.mst_mapper import MstMapper
+        mst_mapper = MstMapper(self.connection)
+        all_mst_data = mst_mapper.get_all_mst()
+        active_mst_data = [mst for mst in all_mst_data if mst.get('use_yn') is None or mst.get('use_yn').upper().strip() == 'Y']
+        active_job_ids = [mst['cd'] for mst in active_mst_data]
+
+        # Apply use_yn filter to allowed job ids
+        if allowed_job_ids is not None:
+            filtered_job_ids = list(set(allowed_job_ids) & set(active_job_ids))
+        else:
+            filtered_job_ids = active_job_ids
+
+        if not filtered_job_ids:
+            return []
+
+        # 4. Combine historical data with today's schedule
         combined_summary_data = self._combine_historical_and_today_data(
-            start_date, end_date, all_data, allowed_job_ids, user
+            start_date, end_date, all_data, filtered_job_ids, user
         )
 
         # 4. Combine summary data with settings and apply filters

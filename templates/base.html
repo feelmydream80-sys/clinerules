@@ -61,10 +61,15 @@
             const currentPath = window.location.pathname;
             let bestMatch = null;
 
+            console.log('updateActiveNav() called');
+            console.log('Current path:', currentPath);
+            console.log('All nav links:', links);
+
             // Remove active styles from all links first
             links.forEach(link => {
                 link.classList.remove('bg-blue-900');
                 link.classList.add('hover:bg-blue-700');
+                console.log('Link path:', link.pathname, 'Link href:', link.href);
             });
 
             if (currentPath === '/') {
@@ -72,6 +77,7 @@
             } else {
                 links.forEach(link => {
                     if (link.hostname === window.location.hostname && link.pathname !== '/') {
+                        console.log('Checking link:', link.pathname, 'currentPath starts with link.pathname:', currentPath.startsWith(link.pathname));
                         if (currentPath.startsWith(link.pathname)) {
                             if (!bestMatch || link.pathname.length > (bestMatch ? bestMatch.pathname.length : 0)) {
                                 bestMatch = link;
@@ -84,6 +90,8 @@
             if (!bestMatch && currentPath === '/') {
                  bestMatch = document.querySelector('a.nav-link[href="/"]');
             }
+
+            console.log('Best match:', bestMatch);
 
             if (bestMatch) {
                 bestMatch.classList.add('bg-blue-900');

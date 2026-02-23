@@ -53,6 +53,10 @@ function handlePageSpecificStyles(doc) {
     const newStyle = doc.getElementById('page-specific-style');
     if (newStyle) {
         document.head.appendChild(newStyle);
+    } else {
+        // If there's no new page-specific style, ensure all old styles are removed
+        const allStyles = document.querySelectorAll('style[id="page-specific-style"]');
+        allStyles.forEach(style => style.remove());
     }
 }
 

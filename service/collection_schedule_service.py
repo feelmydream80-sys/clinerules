@@ -164,7 +164,7 @@ class CollectionScheduleService:
         all_mst_data = mst_mapper.get_all_mst_for_schedule(allowed_job_ids)
         jobs = {}
         for mst in all_mst_data:
-            if mst.get('item6'):
+            if mst.get('item6') and (mst.get('use_yn') is None or mst.get('use_yn').upper().strip() == 'Y'):
                 jobs[mst['cd']] = {
                     'cron': mst['item6'],
                     'cd_nm': mst.get('cd_nm', mst['cd']),

@@ -279,77 +279,88 @@ export function getAddGroupModalHTML() {
 
 // 그룹 수정 모달 HTML
 export function getEditGroupModalHTML(group, groupHeader) {
+    // groupHeader가 undefined 또는 null일 경우 빈 객체로 대체
+    const safeGroupHeader = groupHeader || {};
+    
+    // null 또는 'NULL' 값을 공백으로 변환하는 함수
+    const formatValue = (value) => {
+        if (value === null || value === undefined || value === 'NULL' || value === 'null') {
+            return '';
+        }
+        return String(value);
+    };
+    
     return `
         <div style="max-height: 400px; overflow-y: auto;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">그룹 코드 (cd_cl)</label>
-                    <input type="text" id="editGroupCdCl" value="${groupHeader?.cd_cl || group.cd}" 
+                    <input type="text" id="editGroupCdCl" value="${formatValue(safeGroupHeader.cd_cl || group.cd)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">데이터 코드 (cd)</label>
-                    <input type="text" id="editGroupCd" value="${group.cd}" disabled
+                    <input type="text" id="editGroupCd" value="${formatValue(group.cd)}" disabled
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; background-color: #f5f5f5;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">데이터 명칭 (cd_nm)</label>
-                    <input type="text" id="editGroupNm" value="${group.cd_nm}" 
+                    <input type="text" id="editGroupNm" value="${formatValue(group.cd_nm)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">활용목적 (cd_desc)</label>
-                    <input type="text" id="editGroupDesc" value="${groupHeader?.cd_desc || ''}" 
+                    <input type="text" id="editGroupDesc" value="${formatValue(safeGroupHeader.cd_desc)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">item1</label>
-                    <input type="text" id="editGroupItem1" value="${groupHeader?.item1 || ''}" 
+                    <input type="text" id="editGroupItem1" value="${formatValue(safeGroupHeader.item1)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">item2</label>
-                    <input type="text" id="editGroupItem2" value="${groupHeader?.item2 || ''}" 
+                    <input type="text" id="editGroupItem2" value="${formatValue(safeGroupHeader.item2)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">item3</label>
-                    <input type="text" id="editGroupItem3" value="${groupHeader?.item3 || ''}" 
+                    <input type="text" id="editGroupItem3" value="${formatValue(safeGroupHeader.item3)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">item4</label>
-                    <input type="text" id="editGroupItem4" value="${groupHeader?.item4 || ''}" 
+                    <input type="text" id="editGroupItem4" value="${formatValue(safeGroupHeader.item4)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">item5</label>
-                    <input type="text" id="editGroupItem5" value="${groupHeader?.item5 || ''}" 
+                    <input type="text" id="editGroupItem5" value="${formatValue(safeGroupHeader.item5)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">item6</label>
-                    <input type="text" id="editGroupItem6" value="${groupHeader?.item6 || ''}" 
+                    <input type="text" id="editGroupItem6" value="${formatValue(safeGroupHeader.item6)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">item7</label>
-                    <input type="text" id="editGroupItem7" value="${groupHeader?.item7 || ''}" 
+                    <input type="text" id="editGroupItem7" value="${formatValue(safeGroupHeader.item7)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">item8</label>
-                    <input type="text" id="editGroupItem8" value="${groupHeader?.item8 || ''}" 
+                    <input type="text" id="editGroupItem8" value="${formatValue(safeGroupHeader.item8)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">item9</label>
-                    <input type="text" id="editGroupItem9" value="${groupHeader?.item9 || ''}" 
+                    <input type="text" id="editGroupItem9" value="${formatValue(safeGroupHeader.item9)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">item10</label>
-                    <input type="text" id="editGroupItem10" value="${groupHeader?.item10 || ''}" 
+                    <input type="text" id="editGroupItem10" value="${formatValue(safeGroupHeader.item10)}" 
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
                 </div>
                 <div style="margin-bottom: 10px;">
@@ -382,7 +393,7 @@ export function getDetailModalHTML(title, item = null, groupItemFields = []) {
                         </div>
                     ` : `
                         <input type="text" id="editDetailCd" 
-                               value="${item?.CD || ''}" disabled
+                               value="${item?.cd || ''}" disabled
                                style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; background-color: #f5f5f5;">
                     `}
                     ${!item ? `

@@ -1,4 +1,4 @@
-import { debounce, showMessage } from '../modules/common/utils.js';
+import { debounce, showMessage, filterActiveMstData, filterValidJobs } from '../modules/common/utils.js';
 import { drawContinuousHeatmap, drawHeatmapIfNeeded } from '../modules/data_analysis/heatmap.js';
 import { initJobInfo } from '../modules/dashboard/jobInfo.js';
 import { initCollapsibleFeatures, initSingleCollapsibleCard } from '../modules/ui_components/collapsible.js';
@@ -60,20 +60,22 @@ export function init() {
                 }, {});
             }
 
-            // Fetch all jobs without date filters to ensure all heatmaps are rendered
-            const jobListResponse = await fetch(`/api/job-list?length=-1&start_date=${startDate}&end_date=${endDate}&allData=${allData}`);
-            if (!jobListResponse.ok) throw new Error('Job 목록 조회 실패');
-            const jobListResult = await jobListResponse.json();
-            const allJobs = jobListResult.data;
+            // Fetch all jobs from tb_con_mst
+            const mstResponse = await fetch('/api/mst_list');
+            if (!mstResponse.ok) throw new Error('마스터 목록 조회 실패');
+            const mstResult = await mstResponse.json();
+            
+            // use_yn 필터 적용 후 100배수 데이터 필터링
+            const activeJobs = filterValidJobs(filterActiveMstData(mstResult));
 
             jobMstInfoMap = {};
-            allJobs.forEach(job => {
+            activeJobs.forEach(job => {
                 jobMstInfoMap[job.job_id] = job;
             });
 
             // Fetch Jandi data for each job individually
             allJandiData = {};
-            for (const job of allJobs) {
+            for (const job of activeJobs) {
                 const job_id = job.job_id;
                 const jandiDataResponse = await fetch(`/api/jandi-data?job_id=${job_id}&start_date=${startDate}&end_date=${endDate}&allData=${allData}`);
                 if (!jandiDataResponse.ok) {
@@ -97,7 +99,7 @@ export function init() {
                 allJandiData[job_id] = jobDataMap;
             }
 
-            allJobInfoData = allJobs.map(job => ({
+            allJobInfoData = activeJobs.map(job => ({
                 job_id: job.job_id,
                 cd_nm: job.cd_nm,
                 cron: job.cron, // Use 'cron' from the new DAO response

@@ -17,6 +17,7 @@
  */
 
 import { fetchJobMstInfo } from '../common/api/mst.js';
+import { filterActiveMstData } from '../common/utils.js';
 
 // 상태 변수
 let jobMstInfoMap = {};
@@ -152,7 +153,17 @@ export async function loadChartColorMap(isAdmin) {
  */
 export async function updateJobMstInfoMap(jobIds) {
     if (jobIds.length > 0) {
-        jobMstInfoMap = await fetchJobMstInfo(jobIds);
+        const rawJobInfo = await fetchJobMstInfo(jobIds);
+        // jobMstInfoMap을 배열로 변환한 후 filterActiveMstData로 필터링한 뒤 다시 객체로 변환
+        const jobInfoArray = Object.keys(rawJobInfo).map(jobId => ({
+            job_id: jobId,
+            ...rawJobInfo[jobId]
+        }));
+        const activeJobInfoArray = filterActiveMstData(jobInfoArray);
+        jobMstInfoMap = activeJobInfoArray.reduce((map, jobInfo) => {
+            map[jobInfo.job_id] = jobInfo;
+            return map;
+        }, {});
     } else {
         jobMstInfoMap = {};
     }

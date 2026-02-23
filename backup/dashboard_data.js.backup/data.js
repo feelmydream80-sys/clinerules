@@ -25,7 +25,7 @@
  */
 
 import { fetchAllMstList } from '../common/api/mst.js';
-import { getAdminSettings, getIcons, getMstList } from '../common/dataManager.js';
+import { fetchAllMngrSett, fetchAllIcons } from '../common/api/mngr_sett.js';
 import { setDataFlowStatus } from '../common/api/client.js';
 import { showMessage, filterActiveMstData } from '../common/utils.js';
 
@@ -82,7 +82,7 @@ async function loadAllAdminSettings() {
     }
     dataFlowStatus.adminSettingsFetch.apiCallInitiated = true;
     try {
-        const settings = await getAdminSettings();
+        const settings = await fetchAllMngrSett();
         allAdminSettings = settings; // 전체 설정 저장
         allJobSettings = {};
         settings.forEach(setting => {
@@ -113,7 +113,7 @@ async function loadAllIcons() {
     }
     dataFlowStatus.iconsFetch.apiCallInitiated = true;
     try {
-        const icons = await getIcons();
+        const icons = await fetchAllIcons();
         iconMap = {};
         icons.forEach(icon => {
             iconMap[icon.icon_id] = icon.icon_code;
@@ -136,7 +136,7 @@ async function loadAllIcons() {
 async function loadAllMstList() {
     dataFlowStatus.mstListFetch.apiCallInitiated = true;
     try {
-        const mstList = await getMstList();
+        const mstList = await fetchAllMstList();
         // use_yn 필터 적용
         const activeMstList = filterActiveMstData(mstList);
         

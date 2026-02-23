@@ -1,6 +1,7 @@
 // static/js/pages/card_summary.js
 
 import { downloadExcelTemplate } from '../utils/excelDownload.js';
+import { filterActiveMstData } from '../modules/common/utils.js';
 
 let mstData = {}; // For mapping job_id to name
 
@@ -34,7 +35,9 @@ async function fetchAndRenderCardSummary() {
             const mstResponse = await fetch('/api/mst_list');
             const mstResult = await mstResponse.json();
             if (mstResult) {
-                mstData = mstResult.reduce((acc, item) => {
+                // use_yn 필터 적용
+                const activeMstResult = filterActiveMstData(mstResult);
+                mstData = activeMstResult.reduce((acc, item) => {
                     acc[item.job_id] = item.cd_nm;
                     return acc;
                 }, {});

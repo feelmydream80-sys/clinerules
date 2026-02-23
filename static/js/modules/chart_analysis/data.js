@@ -5,7 +5,7 @@
 import { fetchAllMstList } from '../common/api/mst.js';
 import { fetchMinMaxDates } from '../common/api/dashboard.js';
 import { fetchAllMngrSett } from '../common/api/mngr_sett.js';
-import { showMessage } from '../common/utils.js';
+import { showMessage, filterActiveMstData, filterValidJobs } from '../common/utils.js';
 
 /**
  * @description 모든 Job 마스터 목록을 저장하는 전역 변수 배열입니다.
@@ -26,6 +26,8 @@ export let allMngrSettings = [];
 export async function loadAllMstList() {
     try {
         allJobMstList = await fetchAllMstList();
+        // use_yn 필터 적용
+        allJobMstList = filterValidJobs(filterActiveMstData(allJobMstList));
         return allJobMstList;
     } catch (error) {
         console.error("Failed to load MST list for analytics:", error);

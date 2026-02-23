@@ -26,7 +26,7 @@ class ColumnMapper:
             
             self._reverse_mapping_data = {}
             for table, mappings in json_mappings.items():
-                self._reverse_mapping_data[table.strip()] = {k.strip(): v.strip() for k, v in mappings.items()}
+                self._reverse_mapping_data[table.strip().lower()] = {k.strip().lower(): v.strip().lower() for k, v in mappings.items()}
         except FileNotFoundError:
             print("msys/column_mapping.json not found. Starting with empty mappings.")
             self._reverse_mapping_data = {}
@@ -42,13 +42,13 @@ class ColumnMapper:
             db_mappings = mapping_mapper.get_all_mappings()
 
             for m in db_mappings:
-                new_table = m['new_tbl_nm'].strip()
+                new_table = m['new_tbl_nm'].strip().lower()
                 if m['bf_tbl_nm'] and m['bf_col_nm']:
                     if new_table not in self._reverse_mapping_data:
                         self._reverse_mapping_data[new_table] = {}
                     
-                    bf_col = m['bf_col_nm'].strip()
-                    new_col = m['new_col_nm'].strip()
+                    bf_col = m['bf_col_nm'].strip().lower()
+                    new_col = m['new_col_nm'].strip().lower()
                     
                     # JSON에 이미 키가 존재하지 않을 경우에만 DB 정보로 추가 (JSON 우선)
                     if bf_col not in self._reverse_mapping_data[new_table]:
@@ -70,35 +70,23 @@ class ColumnMapper:
 
     def get_mapping(self, table_name):
         """새 컬럼명 -> 레거시 컬럼명 매핑을 반환합니다."""
-        return self._mapping_data.get(table_name, {})
+        return self._mapping_data.get(table_name.lower(), {})
 
     def get_reverse_mapping(self, table_name):
         """레거시 컬럼명 -> 새 컬럼명 매핑을 반환합니다."""
-        return self._reverse_mapping_data.get(table_name, {})
+        return self._reverse_mapping_data.get(table_name.lower(), {})
 
     def convert_to_legacy_columns(self, table_name, data):
         """
         데이터의 컬럼명을 새로운 표준에서 레거시 이름으로 변환합니다.
         주로 DB 조회 결과를 레거시 코드에 전달할 때 사용됩니다.
         """
-        if not isinstance(data, list):
-            return self._convert_row_to_legacy(table_name, data)
-        
-        return [self._convert_row_to_legacy(table_name, row) for row in data]
+        return [self._convert_row_to_legacy(table_name, row) for row in data] if isinstance(data, list) else self._convert_row_to_legacy(table_name, data)
 
     def _convert_row_to_legacy(self, table_name, row):
         """DB 조회 결과를 레거시 컬럼명으로 변환합니다."""
         mapping = self.get_mapping(table_name)
-        if not mapping or not isinstance(row, dict):
-            return row
-            
-        converted_row = {}
-        for new_col, value in row.items():
-            # DB에서 온 컬럼명(new_col)의 공백을 제거하고 매핑을 찾음
-            stripped_new_col = new_col.strip()
-            legacy_col = mapping.get(stripped_new_col, stripped_new_col)
-            converted_row[legacy_col] = value
-        return converted_row
+        return {mapping.get(new_col.strip().lower(), new_col.strip().lower()): value for new_col, value in row.items()} if (mapping and isinstance(row, dict)) else row
 
     def convert_to_new_columns(self, table_name, data):
         """
@@ -110,21 +98,9 @@ class ColumnMapper:
             return data
 
         if isinstance(data, list):
-            # Process each dictionary in the list
             return [self.convert_to_new_columns(table_name, d) for d in data]
 
-        if not isinstance(data, dict):
-            # Return non-dictionary data as is
-            return data
-
-        converted_data = {}
-        for legacy_col, value in data.items():
-            stripped_legacy_col = legacy_col.strip()
-            # Use the new column name if a mapping exists, otherwise use the original
-            new_col = reverse_mapping.get(stripped_legacy_col, stripped_legacy_col)
-            converted_data[new_col] = value
-            
-        return converted_data
+        return {reverse_mapping.get(legacy_col.strip().lower(), legacy_col.strip().lower()): value for legacy_col, value in data.items()} if isinstance(data, dict) else data
 
 # Singleton instance
 column_mapper = ColumnMapper()

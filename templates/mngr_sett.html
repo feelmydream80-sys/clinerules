@@ -6,28 +6,28 @@
 {% endblock %}
 
 {% block content %}
-    <style>
+    <style id="page-specific-style">
         /* General container styles, consistent with dashboard/analytics */
-        #mngr_sett_page .container {
+        .container {
             max-width: 1600px;
             margin-left: auto;
             margin-right: auto;
             padding: 1rem; /* p-4 */
         }
 
-        #mngr_sett_page .shadow-md {
+        .shadow-md {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
         
-        #mngr_sett_page .rounded-lg {
+        .rounded-lg {
             border-radius: 0.5rem;
         }
 
         /* Main page title style, consistent with dashboard/analytics */
         #mngr_sett_page .page-title {
             color: #2c3e50;
-            margin-top: 20px;
-            margin-bottom: 30px;
+            margin-top: 1px;
+            margin-bottom: 1px;
             font-size: 2.5em;
             font-weight: 700;
             text-align: center; /* Admin page title remains centered for prominence */
@@ -254,24 +254,23 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        #mngr_sett_page .form-actions .save,
         #mngr_sett_page .save {
-            background-color: #007bff !important;
-            color: white !important;
-            padding: 12px 25px !important;
-            border: none !important;
-            border-radius: 6px !important;
-            cursor: pointer !important;
-            font-size: 1.1em !important;
-            font-weight: 600 !important;
-            transition: background-color 0.3s ease, transform 0.2s ease !important;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+            background-color: var(--color-primary);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        #mngr_sett_page .form-actions .save:hover { background-color: #0056b3; transform: translateY(-2px); }
-        #mngr_sett_page .form-actions .reset { background-color: #ffc107; color: #333; }
-        #mngr_sett_page .form-actions .reset:hover { background-color: #e0a800; transform: translateY(-2px); }
-        #mngr_sett_page .form-actions .export { background-color: #17a2b8; color: white; }
-        #mngr_sett_page .form-actions .export:hover { background-color: #138496; transform: translateY(-2px); }
+        #mngr_sett_page .save:hover { background-color: var(--color-primary-hover); transform: translateY(-2px); }
+        #mngr_sett_page .reset { background-color: var(--color-warning); color: #333; }
+        #mngr_sett_page .reset:hover { background-color: #d97706; transform: translateY(-2px); }
+        #mngr_sett_page .export { background-color: var(--color-info); color: white; }
+        #mngr_sett_page .export:hover { background-color: #138496; transform: translateY(-2px); }
 
         /* Import Section */
         #mngr_sett_page .import-section {
@@ -382,12 +381,12 @@
 
 
 
-        #mngr_sett_page .icon-form .add-icon { background-color: #007bff; color: white; }
-        #mngr_sett_page .icon-form .add-icon:hover { background-color: #0056b3; }
-        #mngr_sett_page .icon-form .update-icon { background-color: #28a745; color: white; }
-        #mngr_sett_page .icon-form .update-icon:hover { background-color: #218838; }
-        #mngr_sett_page .icon-form .cancel-edit { background-color: #6c757d; color: white; }
-        #mngr_sett_page .icon-form .cancel-edit:hover { background-color: #5a6268; }
+        #mngr_sett_page .icon-form .add-icon { background-color: var(--color-primary); color: white; }
+        #mngr_sett_page .icon-form .add-icon:hover { background-color: var(--color-primary-hover); }
+        #mngr_sett_page .icon-form .update-icon { background-color: var(--color-success); color: white; }
+        #mngr_sett_page .icon-form .update-icon:hover { background-color: #059669; }
+        #mngr_sett_page .icon-form .cancel-edit { background-color: var(--color-secondary); color: white; }
+        #mngr_sett_page .icon-form .cancel-edit:hover { background-color: var(--color-secondary-hover); }
 
 
         #mngr_sett_page .icon-management-table {
@@ -420,13 +419,14 @@
         }
 
         #mngr_sett_page .icon-management-table .action-buttons button {
-            padding: 5px 10px;
+            padding: 2px 5px;
             margin: 2px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.85em;
+            font-size: 0.75em;
             transition: background-color 0.2s ease;
+            height: 14px;
         }
 
         #mngr_sett_page .icon-management-table .edit-btn { background-color: #007bff; color: white; }
@@ -496,7 +496,7 @@
             }
         }
         /* Hexagon Color Palette Styles */
-        .color-palette {
+        #mngr_sett_page .color-palette {
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
@@ -507,7 +507,7 @@
             border: 1px solid #dee2e6;
         }
 
-        .color-square {
+        #mngr_sett_page .color-square {
             width: 30px;
             height: 30px;
             cursor: pointer;
@@ -516,22 +516,22 @@
             border: 1px solid #ddd;
         }
         
-        .color-square:hover {
+        #mngr_sett_page .color-square:hover {
             transform: scale(1.1);
             border: 1px solid #007bff;
         }
 
-        .color-input-wrapper {
+        #mngr_sett_page .color-input-wrapper {
             position: relative;
             display: flex;
             align-items: center;
         }
         
-        .color-input-wrapper input[type="color"] {
+        #mngr_sett_page .color-input-wrapper input[type="color"] {
             padding-left: 35px; /* Make space for the preview */
         }
 
-        .color-preview {
+        #mngr_sett_page .color-preview {
             position: absolute;
             left: 5px;
             width: 25px;
@@ -542,12 +542,12 @@
         }
 
         /* Border Style Selector Styles */
-        .border-style-selector {
+        #mngr_sett_page .border-style-selector {
             display: flex;
             gap: 10px;
             align-items: center;
         }
-        .border-style-option {
+        #mngr_sett_page .border-style-option {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -557,10 +557,10 @@
             border-radius: 5px;
             transition: border-color 0.2s;
         }
-        .border-style-option input[type="radio"] {
+        #mngr_sett_page .border-style-option input[type="radio"] {
             display: none; /* Hide the actual radio button */
         }
-        .border-style-option .border-symbol {
+        #mngr_sett_page .border-style-option .border-symbol {
             font-size: 1.5em;
             color: #333;
             padding: 0 10px;
@@ -570,28 +570,28 @@
             width: 50px;
             text-align: center;
         }
-        .border-style-option span {
+        #mngr_sett_page .border-style-option span {
             margin-top: 5px;
             font-size: 0.8em;
         }
-        .border-style-option input[type="radio"]:checked ~ .border-symbol {
+        #mngr_sett_page .border-style-option input[type="radio"]:checked ~ .border-symbol {
             border: 2px solid #007bff;
             color: #007bff;
         }
-        .border-style-option input[type="radio"]:checked ~ span {
+        #mngr_sett_page .border-style-option input[type="radio"]:checked ~ span {
             font-weight: bold;
             color: #007bff;
         }
 
         /* 데이터 정의 카드 스타일 */
-        :root {
+        #mngr_sett_page {
             --space-1: 16px;
             --space-2: 24px;
             --space-3: 32px;
         }
 
         /* 카드 그리드 레이아웃 */
-        .card-grid-legacy {
+        #mngr_sett_page .card-grid-legacy {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: var(--space-1);
@@ -599,7 +599,7 @@
             min-height: 100px;
         }
 
-        .card {
+        #mngr_sett_page .card {
             background: white;
             border-radius: 12px;
             padding: 6px;
@@ -609,35 +609,35 @@
             border: 2px solid transparent;
         }
 
-        .card:hover {
+        #mngr_sett_page .card:hover {
             transform: translateY(-4px);
         }
 
-        .card.selected {
+        #mngr_sett_page .card.selected {
             border-color: #10b981;
             box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
         }
 
-        .card-header {
+        #mngr_sett_page .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
         }
 
-        .card-title {
+        #mngr_sett_page .card-title {
             font-size: 1.3rem;
             font-weight: 600;
             color: #1a3c6b;
         }
 
-        .status-group {
+        #mngr_sett_page .status-group {
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
         }
 
-        .status-item {
+        #mngr_sett_page .status-item {
             flex: 1;
             min-width: 80px;
             text-align: center;
@@ -647,18 +647,18 @@
             font-weight: 500;
         }
 
-        .status-success {
+        #mngr_sett_page .status-success {
             background: #e6f7ee;
             color: #1e8a4a;
         }
 
-        .status-fail {
+        #mngr_sett_page .status-fail {
             background: #fce8e8;
             color: #c53030;
         }
 
         /* 상세 패널 스타일 */
-        .detail-panel {
+        #mngr_sett_page .detail-panel {
             background: white;
             border-radius: 12px;
             padding: 20px;
@@ -667,7 +667,7 @@
             display: none;
         }
 
-        .detail-header {
+        #mngr_sett_page .detail-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -676,18 +676,18 @@
             padding-bottom: 10px;
         }
 
-        .detail-title {
+        #mngr_sett_page .detail-title {
             font-size: 1.5rem;
             font-weight: 600;
             color: #1a3c6b;
         }
 
-        .action-buttons {
+        #mngr_sett_page .action-buttons {
             display: flex;
             gap: 10px;
         }
 
-        .btn {
+        #mngr_sett_page .btn {
             padding: 8px 16px;
             border-radius: 6px;
             border: none;
@@ -697,70 +697,70 @@
             font-size: 14px;
         }
 
-        .btn:disabled {
+        #mngr_sett_page .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
 
-        .btn-primary {
+        #mngr_sett_page .btn-primary {
             background-color: #3b82f6;
             color: white;
         }
 
-        .btn-primary:hover:not(:disabled) {
+        #mngr_sett_page .btn-primary:hover:not(:disabled) {
             background-color: #2563eb;
         }
 
-        .btn-danger {
+        #mngr_sett_page .btn-danger {
             background-color: #ef4444;
             color: white;
         }
 
-        .btn-danger:hover:not(:disabled) {
+        #mngr_sett_page .btn-danger:hover:not(:disabled) {
             background-color: #dc2626;
         }
 
         /* 테이블 스타일 */
-        .detail-panel table {
+        #mngr_sett_page .detail-panel table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        .detail-panel th, .detail-panel td {
+        #mngr_sett_page .detail-panel th, #mngr_sett_page .detail-panel td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #e2e8f0;
         }
 
-        .detail-panel th {
+        #mngr_sett_page .detail-panel th {
             background-color: #f8fafc;
             font-weight: 600;
             color: #334155;
         }
 
-        .detail-panel tr:hover {
+        #mngr_sett_page .detail-panel tr:hover {
             background-color: #f1f5f9;
         }
 
         /* 비활성 상태 스타일 */
-        .inactive-row {
+        #mngr_sett_page .inactive-row {
             opacity: 0.5;
             text-decoration: line-through;
         }
 
-        .inactive-text {
+        #mngr_sett_page .inactive-text {
             color: #94a3b8;
             font-style: italic;
         }
 
         /* 로딩 및 에러 상태 */
-        .loading {
+        #mngr_sett_page .loading {
             text-align: center;
             padding: 40px;
             color: #64748b;
         }
 
-        .error {
+        #mngr_sett_page .error {
             background-color: #fee2e2;
             color: #dc2626;
             padding: 12px;
@@ -770,24 +770,47 @@
 
         /* 반응형 디자인 */
         @media (max-width: 768px) {
-            .card-grid-legacy {
+            #mngr_sett_page .card-grid-legacy {
                 grid-template-columns: 1fr;
             }
             
-            .detail-header {
+            #mngr_sett_page .detail-header {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 10px;
             }
             
-            .action-buttons {
+            #mngr_sett_page .action-buttons {
                 width: 100%;
                 justify-content: flex-end;
             }
         }
 
+        /* User Management Button Styles */
+        #mngr_sett_page .reset-password-btn,
+        #mngr_sett_page .delete-user-btn {
+            padding: 5px 10px;
+            margin: 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background-color 0.2s ease;
+        }
+
+        /* Data Access Permission Button Styles */
+        #mngr_sett_page .manage-permission-btn {
+            padding: 5px 10px;
+            margin: 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background-color 0.2s ease;
+        }
+
         /* Data Access Permission Modal Styles */
-        .modal {
+        #mngr_sett_page .modal {
             display: none;
             position: fixed;
             z-index: 1050;
@@ -799,7 +822,7 @@
             background-color: rgba(0,0,0,0.5);
         }
 
-        .modal-content {
+        #mngr_sett_page .modal-content {
             background-color: #fefefe;
             margin: 10% auto;
             padding: 25px;
@@ -811,7 +834,7 @@
             position: relative;
         }
 
-        .modal-header {
+        #mngr_sett_page .modal-header {
             padding-bottom: 15px;
             border-bottom: 1px solid #e5e5e5;
             display: flex;
@@ -819,35 +842,35 @@
             align-items: center;
         }
 
-        .modal-title {
+        #mngr_sett_page .modal-title {
             font-size: 1.5em;
             font-weight: 600;
             color: #333;
         }
         
-        .close-button {
+        #mngr_sett_page .close-button {
             color: #aaa;
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
         }
 
-        .close-button:hover,
-        .close-button:focus {
+        #mngr_sett_page .close-button:hover,
+        #mngr_sett_page .close-button:focus {
             color: black;
             text-decoration: none;
         }
 
-        .modal-body {
+        #mngr_sett_page .modal-body {
             padding-top: 20px;
         }
 
-        .permission-section {
+        #mngr_sett_page .permission-section {
             display: flex;
             gap: 20px;
         }
 
-        .permission-box {
+        #mngr_sett_page .permission-box {
             flex: 1;
             border: 1px solid #ddd;
             border-radius: 5px;
@@ -856,7 +879,7 @@
             overflow-y: auto;
         }
 
-        .permission-box h4 {
+        #mngr_sett_page .permission-box h4 {
             font-size: 1.1em;
             font-weight: 600;
             margin-bottom: 10px;
@@ -864,20 +887,20 @@
             padding-bottom: 8px;
         }
 
-        .permission-list {
+        #mngr_sett_page .permission-list {
             list-style-type: none;
             padding: 0;
             margin: 0;
         }
 
-        .permission-list li {
+        #mngr_sett_page .permission-list li {
             padding: 8px;
             cursor: pointer;
             border-radius: 4px;
             transition: background-color 0.2s;
         }
 
-        .permission-list li:hover {
+        #mngr_sett_page .permission-list li:hover {
             background-color: #f0f0f0;
         }
         
@@ -886,7 +909,7 @@
             color: #155724;
         }
 
-        .permission-controls {
+        #mngr_sett_page .permission-controls {
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -894,7 +917,7 @@
             gap: 10px;
         }
 
-        .permission-controls button {
+        #mngr_sett_page .permission-controls button {
             padding: 8px 12px;
             font-size: 1.2em;
             border-radius: 5px;
@@ -904,43 +927,23 @@
             transition: background-color 0.2s;
         }
 
-        .permission-controls button:hover {
+        #mngr_sett_page .permission-controls button:hover {
             background-color: #e2e6ea;
         }
 
-        .modal-footer {
+        #mngr_sett_page .modal-footer {
             padding-top: 20px;
             border-top: 1px solid #e5e5e5;
             text-align: right;
             margin-top: 20px;
         }
         
-        .modal-footer button {
+        #mngr_sett_page .modal-footer button {
              padding: 10px 20px;
         }
     </style>
     <div id="mngr_sett_page" class="container mx-auto p-4">
         <h1 class="page-title">관리자 설정</h1>
-
-        <!-- Icon Examples Section (Wrapped in content-section) -->
-        <div class="content-section">
-            <div class="icon-examples">
-                <strong>아이콘 예시:</strong>
-                <div class="icon-item"><strong>✅</strong> 성공</div>
-                <div class="icon-item"><strong>❌</strong> 실패</div>
-                <div class="icon-item"><strong>⚠️</strong> 경고</div>
-                <div class="icon-item"><strong>ℹ️</strong> 정보</div>
-                <div class="icon-item"><strong>⚙️</strong> 처리 중</div>
-                <div class="icon-item"><strong>▶️</strong> 시작</div>
-                <div class="icon-item"><strong>⏹️</strong> 중지</div>
-                <div class="icon-item"><strong>⏳</strong> 대기</div>
-                <div class="icon-item"><strong>📊</strong> 차트</div>
-                <div class="icon-item"><strong>🔔</strong> 알림</div>
-                <div class="icon-item"><strong>✨</strong> 완료</div>
-                <div class="icon-item"><strong>🛠️</strong> 유지보수</div>
-                <div class="icon-item"><strong>🚫</strong> 금지</div>
-            </div>
-        </div>
 
         <!-- Message Container (Moved outside content-section to maintain sticky behavior) -->
         <div id="messageContainer">
@@ -1216,6 +1219,40 @@
                             <!-- 사용자 데이터가 여기에 로드됩니다 -->
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Data Access Permission Modal -->
+                <div id="dataPermissionModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">데이터 접근 권한 설정: <span id="dataPermissionModalTitle"></span></h3>
+                            <span class="close-button" id="closePermissionModal">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="permission-section">
+                                <div class="permission-box">
+                                    <h4>미할당 Job ID</h4>
+                                    <input type="text" id="unassignedJobSearchInput" placeholder="Job ID 또는 이름 검색..." class="w-full p-2 mb-2 border rounded-md shadow-sm">
+                                    <ul id="unassignedJobs" class="permission-list">
+                                        <!-- 미할당 Job ID가 여기에 로드됩니다 -->
+                                    </ul>
+                                </div>
+                                <div class="permission-controls">
+                                    <button id="addJobPermission">></button>
+                                    <button id="removeJobPermission"><</button>
+                                </div>
+                                <div class="permission-box">
+                                    <h4>할당된 Job ID</h4>
+                                    <ul id="assignedJobs" class="permission-list">
+                                        <!-- 할당된 Job ID가 여기에 로드됩니다 -->
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button id="savePermissionChangesBtn" class="save">저장</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1525,40 +1562,6 @@
                 </div>
             </div>
 
-        </div>
-    </div>
-
-    <!-- Data Access Permission Modal -->
-    <div id="dataPermissionModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">데이터 접근 권한 설정: <span id="dataPermissionModalTitle"></span></h3>
-                <span class="close-button" id="closePermissionModal">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="permission-section">
-                    <div class="permission-box">
-                        <h4>미할당 Job ID</h4>
-                        <input type="text" id="unassignedJobSearchInput" placeholder="Job ID 또는 이름 검색..." class="w-full p-2 mb-2 border rounded-md shadow-sm">
-                        <ul id="unassignedJobs" class="permission-list">
-                            <!-- 미할당 Job ID가 여기에 로드됩니다 -->
-                        </ul>
-                    </div>
-                    <div class="permission-controls">
-                        <button id="addJobPermission">></button>
-                        <button id="removeJobPermission"><</button>
-                    </div>
-                    <div class="permission-box">
-                        <h4>할당된 Job ID</h4>
-                        <ul id="assignedJobs" class="permission-list">
-                            <!-- 할당된 Job ID가 여기에 로드됩니다 -->
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="savePermissionChangesBtn" class="save">저장</button>
-            </div>
         </div>
     </div>
 

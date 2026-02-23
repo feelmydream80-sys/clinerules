@@ -1,0 +1,54 @@
+메뉴 데이터:
+- dashboard: /dashboard
+- airflow: http://10.200.153.136:180
+- kafka_ui: http://10.200.153.136:28080/
+- api_test: /api_test
+- chart_analysis: /chart-analysis
+- data_analysis: /data-analysis
+- data_spec: /data-spec
+- jandi: /jandi
+- raw_data: /raw-data
+- card_summary: /card_summary
+- mngr_sett: /mngr_sett
+
+현재 경로: http://127.0.0.1:18080/chart_analysis (underscore)
+메뉴 URL: /chart-analysis (dash)
+
+현재 경로: http://127.0.0.1:18080/raw_data (underscore)
+메뉴 URL: /raw-data (dash)
+
+updateActiveNav() 함수:
+function updateActiveNav() {
+    const links = document.querySelectorAll('a.nav-link');
+    const currentPath = window.location.pathname;
+    let bestMatch = null;
+
+    // Remove active styles from all links first
+    links.forEach(link => {
+        link.classList.remove('bg-blue-900');
+        link.classList.add('hover:bg-blue-700');
+    });
+
+    if (currentPath === '/') {
+        bestMatch = document.querySelector('a.nav-link[href="/"]');
+    } else {
+        links.forEach(link => {
+            if (link.hostname === window.location.hostname && link.pathname !== '/') {
+                if (currentPath.startsWith(link.pathname)) {
+                    if (!bestMatch || link.pathname.length > (bestMatch ? bestMatch.pathname.length : 0)) {
+                        bestMatch = link;
+                    }
+                }
+            }
+        });
+    }
+
+    if (!bestMatch && currentPath === '/') {
+         bestMatch = document.querySelector('a.nav-link[href="/"]');
+    }
+
+    if (bestMatch) {
+        bestMatch.classList.add('bg-blue-900');
+        bestMatch.classList.remove('hover:bg-blue-700');
+    }
+}

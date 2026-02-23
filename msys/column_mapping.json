@@ -1,51 +1,105 @@
 {
-    "TB_MNGR_SETT": {
-        "job_id": "cd",
-        "sett_id": "cd",
-        "CNN_FAILR_THRS_VAL": "cnn_failr_thrs_val",
-        "CNN_WARN_THRS_VAL": "cnn_warn_thrs_val",
-        "CNN_FAILR_ICON_ID": "cnn_failr_icon_id",
-        "CNN_FAILR_WRD_COLR": "cnn_failr_wrd_colr",
-        "CNN_WARN_ICON_ID": "cnn_warn_icon_id",
-        "CNN_WARN_WRD_COLR": "cnn_warn_wrd_colr",
-        "CNN_SUCS_ICON_ID": "cnn_sucs_icon_id",
-        "CNN_SUCS_WRD_COLR": "cnn_sucs_wrd_colr",
-        "DLY_SUCS_RT_THRS_VAL": "dly_sucs_rt_thrs_val",
-        "DD7_SUCS_RT_THRS_VAL": "dd7_sucs_rt_thrs_val",
-        "MTHL_SUCS_RT_THRS_VAL": "mthl_sucs_rt_thrs_val",
-        "MC6_SUCS_RT_THRS_VAL": "mc6_sucs_rt_thrs_val",
-        "YY1_SUCS_RT_THRS_VAL": "yy1_sucs_rt_thrs_val",
-        "SUCS_RT_SUCS_ICON_ID": "sucs_rt_sucs_icon_id",
-        "SUCS_RT_SUCS_WRD_COLR": "sucs_rt_sucs_wrd_colr",
-        "SUCS_RT_WARN_ICON_ID": "sucs_rt_warn_icon_id",
-        "SUCS_RT_WARN_WRD_COLR": "sucs_rt_warn_wrd_colr",
-        "CHRT_PRD_VALUE": "chrt_prd_value",
-        "CHRT_TP": "chrt_tp",
-        "CHRT_DSP_JOB_ID": "chrt_dsp_job_id",
-        "CHRT_DSP_YN": "chrt_dsp_yn",
-        "CHRT_COLR": "chrt_colr",
-        "GRASS_CHRT_MIN_COLR": "grass_chrt_min_colr",
-        "GRASS_CHRT_MAX_COLR": "grass_chrt_max_colr"
-    },
-    "TB_USER": {
-        "USER_ID": "user_id",
-        "ACC_STS": "acc_sts"
-    },
-    "TB_MENU": {
-        "MENU_ID": "menu_id",
-        "MENU_NM": "menu_nm",
-        "MENU_URL": "menu_url"
-    },
-    "TB_USER_AUTH_CTRL": {
-        "USER_ID": "user_id",
-        "MENU_ID": "menu_id"
-    },
-    "TB_CON_HIST": {
-        "JOB_ID": "job_id"
-    },
-    "TB_CON_MST": {
-        "CD": "cd",
-        "ITEM1": "item1"
-    },
-    "TB_USER_ACS_LOG": {}
+  "tb_mngr_sett": {
+    "cnn_failr_thrs_val": "cnn_failr_thrs_val",
+    "cnn_warn_thrs_val": "cnn_warn_thrs_val",
+    "cnn_failr_icon_id": "cnn_failr_icon_id",
+    "cnn_failr_wrd_colr": "cnn_failr_wrd_colr",
+    "cnn_warn_icon_id": "cnn_warn_icon_id",
+    "cnn_warn_wrd_colr": "cnn_warn_wrd_colr",
+    "cnn_sucs_icon_id": "cnn_sucs_icon_id",
+    "cnn_sucs_wrd_colr": "cnn_sucs_wrd_colr",
+    "dly_sucs_rt_thrs_val": "dly_sucs_rt_thrs_val",
+    "dd7_sucs_rt_thrs_val": "dd7_sucs_rt_thrs_val",
+    "mthl_sucs_rt_thrs_val": "mthl_sucs_rt_thrs_val",
+    "mc6_sucs_rt_thrs_val": "mc6_sucs_rt_thrs_val",
+    "yy1_sucs_rt_thrs_val": "yy1_sucs_rt_thrs_val",
+    "sucs_rt_sucs_icon_id": "sucs_rt_sucs_icon_id",
+    "sucs_rt_sucs_wrd_colr": "sucs_rt_sucs_wrd_colr",
+    "sucs_rt_warn_icon_id": "sucs_rt_warn_icon_id",
+    "sucs_rt_warn_wrd_colr": "sucs_rt_warn_wrd_colr",
+    "chrt_prd_value": "chart_period_value",
+    "chrt_tp": "chart_type",
+    "chrt_dsp_job_id": "chart_display_job_ids",
+    "chrt_dsp_yn": "chrt_dsp_yn",
+    "chrt_colr": "chrt_colr",
+    "grass_chrt_min_colr": "grass_chrt_min_colr",
+    "grass_chrt_max_colr": "grass_chrt_max_colr",
+    "cd": "cd"
+  },
+  "tb_user": {
+    "user_id": "user_id",
+    "user_pwd": "password",
+    "acc_sts": "status",
+    "acc_cre_dt": "created_at",
+    "acc_apr_dt": "approved_at"
+  },
+  "tb_menu": {
+    "menu_id": "menu_id",
+    "menu_nm": "menu_name",
+    "menu_url": "menu_url"
+  },
+  "tb_user_auth_ctrl": {
+    "auth_id": "id",
+    "user_id": "user_id",
+    "menu_id": "menu_id",
+    "auth_yn": "permission"
+  },
+  "tb_con_hist": {
+    "job_id": "job_id",
+    "con_id": "con_id",
+    "rqs_info": "rqs_info",
+    "start_dt": "start_dt",
+    "execution_dt": "execution_dt",
+    "end_dt": "end_dt",
+    "status": "status",
+    "trbl_hist_no": "trbl_hist_no"
+  },
+  "tb_con_mst": {
+    "cd_cl": "cd_cl",
+    "cd": "cd",
+    "cd_nm": "cd_nm",
+    "cd_desc": "cd_desc",
+    "item1": "item1",
+    "item2": "item2",
+    "item3": "item3",
+    "item4": "item4",
+    "item5": "item5",
+    "item6": "item6",
+    "item7": "item7",
+    "item8": "item8",
+    "item9": "item9",
+    "item10": "item10",
+    "update_dt": "update_dt",
+    "del_dt": "del_dt",
+    "use_yn": "use_yn"
+  },
+  "tb_user_acs_log": {
+    "user_log_id": "log_id",
+    "user_id": "user_id",
+    "menu_nm": "menu_name",
+    "acs_time": "access_time"
+  },
+  "tb_con_hist_evnt_log": {
+    "evnt_id": "id",
+    "evnt_tp": "event_type",
+    "evnt_occr_time": "event_time",
+    "evnt_chg_row": "changed_row"
+  },
+  "tb_data_spec_parm": {
+    "parm_id": "id",
+    "api_spec_id": "spec_id",
+    "parm_tp": "param_type",
+    "parm_nm_krn": "name_ko",
+    "parm_nm_eng": "name_en",
+    "expl": "description",
+    "ncsr_yn": "is_required"
+  },
+  "tb_icon": {
+    "icon_id": "icon_id",
+    "icon_cd": "icon_cd",
+    "icon_nm": "icon_name",
+    "icon_expl": "description",
+    "icon_cre_dt": "created_at",
+    "icon_dsp_yn": "display_yn"
+  }
 }

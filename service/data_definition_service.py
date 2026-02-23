@@ -117,6 +117,17 @@ class DataDefinitionService:
             else:
                 data['use_yn'] = 'Y'
             
+            # 상세 객체를 활성화(Y)할 때 그룹도 활성화(Y)로 변경
+            if data['use_yn'] == 'Y':
+                # cd_cl이 그룹 코드인지 확인 (100의 배수)
+                cd_cl_number = int(cd_cl[2:]) if cd_cl.startswith('CD') and cd_cl[2:].isdigit() else None
+                if cd_cl_number and cd_cl_number % 100 == 0:
+                    # 그룹 코드인 경우, 그룹의 use_yn도 Y로 변경
+                    group_data = self.con_mst_dao.get_mst_data_by_cd(cd_cl)
+                    if group_data and (not group_data.get('use_yn') or group_data.get('use_yn').strip() == 'N'):
+                        self.con_mst_dao.update_mst_data(cd_cl, cd_cl, {'use_yn': 'Y'})
+                        self.logger.info(f"Group activated successfully: {cd_cl}")
+            
             # 데이터 업데이트
             self.con_mst_dao.update_mst_data(cd_cl, cd, data)
             self.logger.info(f"Data updated successfully: {cd}")

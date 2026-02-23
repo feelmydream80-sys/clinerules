@@ -21,6 +21,13 @@ def mngr_sett_page():
     """관리자 설정 페이지를 렌더링합니다."""
     return render_template('mngr_sett.html')
 
+@mngr_sett_bp.route('/mngr_sett_test', methods=['GET'])
+@login_required
+@check_password_change_required
+def mngr_sett_test_page():
+    """관리자 설정 테스트 페이지를 렌더링합니다."""
+    return render_template('mngr_sett_test.html')
+
 # --- API Endpoints ---
 api_mngr_sett_bp = Blueprint('api_mngr_sett', __name__, url_prefix='/api/mngr_sett')
 

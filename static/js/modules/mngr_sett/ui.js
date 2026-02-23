@@ -262,8 +262,8 @@ export function renderIconTable(allIcons) {
                 <input type="checkbox" class="toggle-display-yn" data-icon-id="${icon.icon_id}" ${icon.icon_dsp_yn === true ? 'checked' : ''}>
             </td>
             <td class="px-4 py-2 border-b">
-                <button class="edit-icon-btn bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded-md mr-2" data-icon-id="${icon.icon_id}">수정</button>
-                <button class="delete-icon-btn bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-md" data-icon-id="${icon.icon_id}">삭제</button>
+                <button class="edit-icon-btn bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded-md mr-2" data-icon-id="${icon.icon_id}" style="height:28px; font-size:0.85em; display:inline-flex; align-items:center; justify-content:center;">수정</button>
+                <button class="delete-icon-btn bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-md" data-icon-id="${icon.icon_id}" style="height:28px; font-size:0.85em; display:inline-flex; align-items:center; justify-content:center;">삭제</button>
             </td>
         `;
     });

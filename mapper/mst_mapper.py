@@ -69,7 +69,7 @@ class MstMapper:
             return {}
         format_strings = ','.join(['%s'] * len(job_ids))
         query = f"""
-            SELECT cd, cd_nm, cd_desc, item1, item2, item3, item4, item5, item6, item7, item8, item9, item10
+            SELECT cd, cd_nm, cd_desc, item1, item2, item3, item4, item5, item6, item7, item8, item9, item10, use_yn
             FROM tb_con_mst
             WHERE cd IN ({format_strings})
         """

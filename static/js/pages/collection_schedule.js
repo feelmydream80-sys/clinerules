@@ -1,5 +1,6 @@
 import { showToast } from '../utils/toast.js';
 import { downloadExcelTemplate } from '../utils/excelDownload.js';
+import { filterActiveMstData } from '../modules/common/utils.js';
 export function init() {
     // DOM Elements
     const weeklyBtn = document.getElementById('weekly-btn');
@@ -504,7 +505,9 @@ export function init() {
                 const mstResponse = await fetch('/api/mst_list');
                 const mstResult = await mstResponse.json();
                 if (mstResult) {
-                    mstData = mstResult.reduce((acc, item) => {
+                    // use_yn 필터 적용
+                    const activeMstResult = filterActiveMstData(mstResult);
+                    mstData = activeMstResult.reduce((acc, item) => {
                         acc[item.job_id] = item.cd_nm;
                         return acc;
                     }, {});

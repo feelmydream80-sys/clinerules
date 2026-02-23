@@ -557,14 +557,17 @@ async function initializePage() {
     if (dataDefinitionTab) {
         let hasBeenInitialized = false;
         dataDefinitionTab.addEventListener('click', () => {
+            console.log('🔍 Tab clicked: dataDefinition, hasBeenInitialized:', hasBeenInitialized);
             if (!hasBeenInitialized) {
-                console.log('🔍 Tab clicked: dataDefinition, calling init');
+                console.log('🔍 Calling initDataDefinition');
                 initDataDefinition();
                 hasBeenInitialized = true;
             } else {
-                console.log('🔍 Tab clicked: dataDefinition, already initialized');
+                console.log('🔍 Already initialized, skipping init');
             }
         });
+    } else {
+        console.warn('⚠️ mngr_sett.js: dataDefinitionTab not found');
     }
 
     // The save button for schedule settings is inside the tab content, so it doesn't need a listener here.
