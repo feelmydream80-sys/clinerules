@@ -83,7 +83,7 @@ function renderScheduleSettingsForm(settings) {
         { value: 'double', label: '이중선', symbol: '═' }
     ];
 
-     const borderStyleOptions = borderStyles.map(style => `
+    const borderStyleOptions = borderStyles.map(style => `
         <label class="border-style-option">
             <input type="radio" name="grpBrdrStyl" value="${style.value}" ${setting.grpBrdrStyl === style.value ? 'checked' : ''}>
             <div class="border-symbol">${style.symbol}</div>
@@ -91,75 +91,410 @@ function renderScheduleSettingsForm(settings) {
         </label>
     `).join('');
 
+    // 아이콘 옵션 생성 함수
+    const createIconOptions = (selectedIconId) => {
+        const options = ['<option value="">선택 안 함</option>'];
+        allIcons.forEach(icon => {
+            if (icon.icon_dsp_yn) {
+                const isSelected = icon.icon_id === selectedIconId;
+                options.push(`<option value="${icon.icon_id}" ${isSelected ? 'selected' : ''}>${icon.icon_cd}</option>`);
+            }
+        });
+        return options.join('');
+    };
+
+    // 상태별 카드 생성 함수
+    const createStatusCard = (statusKey, statusLabel, iconId, bgColor, textColor) => {
+        const iconOptions = createIconOptions(iconId);
+        return `
+            <div class="status-card">
+                <div class="status-card-title">${statusLabel}</div>
+                <div class="form-row">
+                    <label for="${statusKey}IconId">아이콘</label>
+                    <select id="${statusKey}IconId">${iconOptions}</select>
+                </div>
+                <div class="form-row">
+                    <label for="${statusKey}BgColr">배경색</label>
+                    <div class="color-input-wrapper">
+                        <div class="color-preview" style="background-color: ${bgColor}"></div>
+                        <input type="color" id="${statusKey}BgColr" value="${bgColor}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label for="${statusKey}TxtColr">텍스트색</label>
+                    <div class="color-input-wrapper">
+                        <div class="color-preview" style="background-color: ${textColor}"></div>
+                        <input type="color" id="${statusKey}TxtColr" value="${textColor}">
+                    </div>
+                </div>
+            </div>
+        `;
+    };
+
     formContainer.innerHTML = `
         <input type="hidden" id="scheduleSettId" value="${setting.settId ?? ''}">
         
-        <!-- General Settings -->
-        <div class="p-6 rounded-lg border border-gray-200 bg-gray-50">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">기본 설정</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="form-group">
-                    <label for="grpMinCnt" class="block text-sm font-medium text-gray-700 mb-1">그룹화 최소 개수</label>
-                    <input type="number" id="grpMinCnt" value="${setting.grpMinCnt ?? ''}" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="form-group">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">그룹 외곽선 스타일</label>
-                    <div class="border-style-selector">${borderStyleOptions}</div>
-                </div>
-                <div class="form-group flex items-center">
-                     <div class="flex items-center h-10">
-                        <input type="checkbox" id="scheduleUseYn" ${setting.useYn === 'Y' ? 'checked' : ''} class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="scheduleUseYn" class="ml-2 block text-sm font-medium text-gray-900">설정 사용 여부</label>
+        <!-- Basic Settings -->
+        <div class="settings-section">
+            <h2 class="section-title">기본 설정</h2>
+            <div class="basic-settings-grid">
+                <!-- Grouping Settings -->
+                <div class="setting-group">
+                    <div class="setting-group-title">그룹화 설정</div>
+                    <div class="form-row">
+                        <label for="grpMinCnt">그룹화 최소 개수</label>
+                        <input type="number" id="grpMinCnt" value="${setting.grpMinCnt ?? ''}" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="form-row">
+                        <label>그룹 외곽선 스타일</label>
+                        <div class="border-style-selector">${borderStyleOptions}</div>
+                    </div>
+                    <div class="form-row mt-4">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="scheduleUseYn" ${setting.useYn === 'Y' ? 'checked' : ''} class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            설정 사용 여부
+                        </label>
                     </div>
                 </div>
-                <div class="form-group md:col-span-2">
-                   <h4 class="text-md font-semibold text-gray-700 mb-2 border-t pt-4">그룹 색상 임계값 설정</h4>
-                    <div class="flex items-center space-x-4">
-                        <label class="block text-sm font-medium text-gray-700">색상 기준:</label>
-                        <label><input type="radio" name="grpColrCrtr" value="prgr" ${setting.grpColrCrtr === 'prgr' ? 'checked' : ''}> 진행률</label>
-                        <label><input type="radio" name="grpColrCrtr" value="succ" ${setting.grpColrCrtr === 'succ' ? 'checked' : ''}> 성공률</label>
+
+                <!-- Threshold Settings -->
+                <div class="setting-group">
+                    <div class="setting-group-title">그룹 색상 임계값 설정</div>
+                    <div class="form-row">
+                        <label>색상 기준</label>
+                        <div class="radio-group">
+                            <label class="radio-item">
+                                <input type="radio" name="grpColrCrtr" value="prgr" ${setting.grpColrCrtr === 'prgr' ? 'checked' : ''}>
+                                진행률
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="grpColrCrtr" value="succ" ${setting.grpColrCrtr === 'succ' ? 'checked' : ''}>
+                                성공률
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label for="prgsRtRedThrsval">진행률 문제점 임계값 (%)</label>
+                        <input type="number" id="prgsRtRedThrsval" value="${setting.prgsRtRedThrsval ?? ''}" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="form-row">
+                        <label for="prgsRtOrgThrsval">진행률 경고 임계값 (%)</label>
+                        <input type="number" id="prgsRtOrgThrsval" value="${setting.prgsRtOrgThrsval ?? ''}" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="form-row">
+                        <label for="succRtRedThrsval">성공률 문제점 임계값 (%)</label>
+                        <input type="number" id="succRtRedThrsval" value="${setting.succRtRedThrsval ?? ''}" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="form-row">
+                        <label for="succRtOrgThrsval">성공률 경고 임계값 (%)</label>
+                        <input type="number" id="succRtOrgThrsval" value="${setting.succRtOrgThrsval ?? ''}" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
-               <div class="form-group">
-                   <label for="prgsRtRedThrsval" class="block text-sm font-medium text-gray-700 mb-1">진행률 문제점 임계값 (%)</label>
-                   <input type="number" id="prgsRtRedThrsval" value="${setting.prgsRtRedThrsval ?? ''}" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-               </div>
-               <div class="form-group">
-                   <label for="prgsRtOrgThrsval" class="block text-sm font-medium text-gray-700 mb-1">진행률 경고 임계값 (%)</label>
-                   <input type="number" id="prgsRtOrgThrsval" value="${setting.prgsRtOrgThrsval ?? ''}" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-               </div>
-               <div class="form-group">
-                   <label for="succRtRedThrsval" class="block text-sm font-medium text-gray-700 mb-1">성공률 문제점 임계값 (%)</label>
-                   <input type="number" id="succRtRedThrsval" value="${setting.succRtRedThrsval ?? ''}" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-               </div>
-               <div class="form-group">
-                   <label for="succRtOrgThrsval" class="block text-sm font-medium text-gray-700 mb-1">성공률 경고 임계값 (%)</label>
-                   <input type="number" id="succRtOrgThrsval" value="${setting.succRtOrgThrsval ?? ''}" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-               </div>
-                <div class="form-group md:col-span-2">
-                   <h4 class="text-md font-semibold text-gray-700 mt-2 border-t pt-4">그룹 아이콘 설정</h4>
+
+                <!-- Group Icon Settings -->
+                <div class="setting-group">
+                    <div class="setting-group-title">그룹 아이콘 설정</div>
+                    <div class="form-row">
+                        <label for="grpPrgsIconId">그룹 진행률 아이콘</label>
+                        <select id="grpPrgsIconId">${createIconOptions(setting.grpPrgsIconId)}</select>
+                    </div>
+                    <div class="form-row">
+                        <label for="grpSucsIconId">그룹 성공률 아이콘</label>
+                        <select id="grpSucsIconId">${createIconOptions(setting.grpSucsIconId)}</select>
+                    </div>
                 </div>
-                ${createStatusSettingRow('grp_prgs', '그룹 진행률', setting.grpPrgsIconId, null, null, allIcons, true)}
-                ${createStatusSettingRow('grp_sucs', '그룹 성공률', setting.grpSucsIconId, null, null, allIcons, true)}
             </div>
         </div>
 
-        <!-- Display Settings -->
-        <div class="mt-8 p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">상태별 표시 설정</h3>
-            <div class="space-y-6">
-                ${createStatusSettingRow('sucs', '성공', setting.sucsIconId, setting.sucsBgColr, setting.sucsTxtColr, allIcons)}
-                ${createStatusSettingRow('fail', '실패', setting.failIconId, setting.failBgColr, setting.failTxtColr, allIcons)}
-                ${createStatusSettingRow('prgs', '수집중', setting.prgsIconId, setting.prgsBgColr, setting.prgsTxtColr, allIcons)}
-                ${createStatusSettingRow('nodt', '미수집', setting.nodtIconId, setting.nodtBgColr, setting.nodtTxtColr, allIcons)}
-                ${createStatusSettingRow('schd', '예정', setting.schdIconId, setting.schdBgColr, setting.schdTxtColr, allIcons)}
+        <!-- Status Settings -->
+        <div class="settings-section">
+            <h2 class="section-title">상태별 표시 설정</h2>
+            <div class="status-settings-grid">
+                ${createStatusCard('sucs', '성공', setting.sucsIconId, setting.sucsBgColr, setting.sucsTxtColr)}
+                ${createStatusCard('fail', '실패', setting.failIconId, setting.failBgColr, setting.failTxtColr)}
+                ${createStatusCard('prgs', '수집중', setting.prgsIconId, setting.prgsBgColr, setting.prgsTxtColr)}
+                ${createStatusCard('nodt', '미수집', setting.nodtIconId, setting.nodtBgColr, setting.nodtTxtColr)}
+                ${createStatusCard('schd', '예정', setting.schdIconId, setting.schdBgColr, setting.schdTxtColr)}
             </div>
-            
         </div>
-
     `;
-    
-    // The shared color palette is now used, so we don't create a separate one here.
+
+    // Add CSS styles for the new layout
+    const styleId = 'schedule-settings-styles';
+    let styleElement = document.getElementById(styleId);
+    if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = styleId;
+        document.head.appendChild(styleElement);
+    }
+
+    styleElement.innerHTML = `
+        /* Settings Grid */
+        .settings-section {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        /* 3-Column Grid for Basic Settings */
+        .basic-settings-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        /* Setting Group */
+        .setting-group {
+            background-color: #f1f5f9;
+            padding: 1.25rem;
+            border-radius: 0.5rem;
+        }
+
+        .setting-group-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 1rem;
+        }
+
+        /* Form Elements */
+        .form-row {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        
+        .color-input-wrapper {
+            width: 100%;
+            padding: 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Radio Buttons */
+        .radio-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .radio-item input[type="radio"] {
+            width: auto;
+        }
+
+        /* Checkbox */
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+        }
+
+        /* Color Input */
+        .color-input-wrapper {
+            display: flex;
+            align-items: center;
+            min-height: 2.5rem;
+        }
+
+        .color-preview {
+            width: 2rem;
+            height: 2rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-right: 0.5rem;
+        }
+
+        input[type="color"] {
+            flex: 1;
+            height: 2rem;
+            padding: 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            text-align: center;
+            background-color: white;
+        }
+
+        /* 5-Column Grid for Status Settings */
+        .status-settings-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.5rem;
+        }
+
+        /* Status Setting Card */
+        .status-card {
+            background-color: #f1f5f9;
+            padding: 1.25rem;
+            border-radius: 0.5rem;
+        }
+
+        .status-card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        /* Border Style Selector */
+        .border-style-selector {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .border-style-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 0.5rem;
+            border: 2px solid transparent;
+            border-radius: 0.375rem;
+            transition: border-color 0.2s;
+        }
+
+        .border-style-option:hover {
+            border-color: #e2e8f0;
+        }
+
+        .border-style-option input[type="radio"] {
+            display: none;
+        }
+
+        .border-symbol {
+            font-size: 1.5rem;
+            color: #334155;
+            padding: 0.5rem 1rem;
+            border: 1px solid #cbd5e1;
+            background-color: white;
+            border-radius: 0.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .border-style-option input[type="radio"]:checked ~ .border-symbol {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .border-style-option span {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .basic-settings-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .status-settings-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .basic-settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .status-settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .settings-section {
+                padding: 1rem;
+            }
+
+            .section-title {
+                font-size: 1.125rem;
+            }
+        }
+
+        /* Helper Classes */
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
+
+        .mt-4 {
+            margin-top: 1rem;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+    `;
+
+    // Color preview update
+    document.querySelectorAll('input[type="color"]').forEach(input => {
+        input.addEventListener('input', function() {
+            const preview = this.previousElementSibling;
+            if (preview && preview.classList.contains('color-preview')) {
+                preview.style.backgroundColor = this.value;
+            }
+        });
+    });
+
+    // Border style selector
+    document.querySelectorAll('.border-style-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+        });
+    });
 }
 
 
@@ -346,23 +681,23 @@ async function saveScheduleSettings() {
         use_yn: useYn,
         grp_brdr_styl: document.querySelector('input[name="grpBrdrStyl"]:checked') ? document.querySelector('input[name="grpBrdrStyl"]:checked').value : 'solid',
         grp_colr_crtr: document.querySelector('input[name="grpColrCrtr"]:checked') ? document.querySelector('input[name="grpColrCrtr"]:checked').value : 'prgr',
-        sucs_icon_id: getIconId('sucs_icon_id'),
-        sucs_bg_colr: document.getElementById('sucs_bg_colr').value,
-        sucs_txt_colr: document.getElementById('sucs_txt_colr').value,
-        fail_icon_id: getIconId('fail_icon_id'),
-        fail_bg_colr: document.getElementById('fail_bg_colr').value,
-        fail_txt_colr: document.getElementById('fail_txt_colr').value,
-        prgs_icon_id: getIconId('prgs_icon_id'),
-        prgs_bg_colr: document.getElementById('prgs_bg_colr').value,
-        prgs_txt_colr: document.getElementById('prgs_txt_colr').value,
-        nodt_icon_id: getIconId('nodt_icon_id'),
-        nodt_bg_colr: document.getElementById('nodt_bg_colr').value,
-        nodt_txt_colr: document.getElementById('nodt_txt_colr').value,
-        schd_icon_id: getIconId('schd_icon_id'),
-        schd_bg_colr: document.getElementById('schd_bg_colr').value,
-        schd_txt_colr: document.getElementById('schd_txt_colr').value,
-        grp_prgs_icon_id: getIconId('grp_prgs_icon_id'),
-        grp_sucs_icon_id: getIconId('grp_sucs_icon_id')
+        sucs_icon_id: getIconId('sucsIconId'),
+        sucs_bg_colr: document.getElementById('sucsBgColr').value,
+        sucs_txt_colr: document.getElementById('sucsTxtColr').value,
+        fail_icon_id: getIconId('failIconId'),
+        fail_bg_colr: document.getElementById('failBgColr').value,
+        fail_txt_colr: document.getElementById('failTxtColr').value,
+        prgs_icon_id: getIconId('prgsIconId'),
+        prgs_bg_colr: document.getElementById('prgsBgColr').value,
+        prgs_txt_colr: document.getElementById('prgsTxtColr').value,
+        nodt_icon_id: getIconId('nodtIconId'),
+        nodt_bg_colr: document.getElementById('nodtBgColr').value,
+        nodt_txt_colr: document.getElementById('nodtTxtColr').value,
+        schd_icon_id: getIconId('schdIconId'),
+        schd_bg_colr: document.getElementById('schdBgColr').value,
+        schd_txt_colr: document.getElementById('schdTxtColr').value,
+        grp_prgs_icon_id: getIconId('grpPrgsIconId'),
+        grp_sucs_icon_id: getIconId('grpSucsIconId')
     };
 
     try {
@@ -534,13 +869,7 @@ async function initializePage() {
         console.warn('⚠️ mngr_sett.js: dataDefinitionContainer not found');
     }
 
-    const addRowBtn = container.querySelector('#addRowBtn');
-    if (addRowBtn) {
-        console.log('AddRowBtn found, adding event listener');
-        addRowBtn.addEventListener('click', addNewSettingRow);
-    } else {
-        console.warn('AddRowBtn not found');
-    }
+    // 행 추가 버튼은 더 이상 사용하지 않음 (UI에서 제거)
 
     const settingsTab = container.querySelector('button[data-tab="basicSettings"]'); // Changed from "settings" to "basicSettings" to match HTML
     if (settingsTab) {

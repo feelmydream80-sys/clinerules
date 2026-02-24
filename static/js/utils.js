@@ -16,14 +16,84 @@ function debugLog(...args) {
 /**
  * 토스트 메시지 표시 함수
  * @param {string} message - 표시할 메시지
- * @param {string} type - 메시지 타입 (success, error, warning, info)
+ * @param {string} category - 메시지 타입 (success, error, warning, info)
  */
-function showToast(message, type = 'info') {
-    // 기존 toast.js에서 가져온 함수 구현
-    // 실제 구현은 toast.js에 위임
-    import('./utils/toast.js').then(module => {
-        module.showToast(message, type);
-    });
+function showToast(message, category = 'info') {
+    // 직접 toast.js의 showToast 함수 구현을 호출 (동적 import 제거)
+    const container = getOrCreateToastContainer();
+
+    const toast = document.createElement('div');
+    toast.textContent = message;
+
+    // --- 기본 스타일 ---
+    toast.style.padding = '12px 20px';
+    toast.style.color = 'white';
+    toast.style.borderRadius = '5px';
+    toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    toast.style.minWidth = '250px';
+    toast.style.maxWidth = '400px';
+    toast.style.wordBreak = 'break-all';
+
+    // --- 카테고리별 스타일 ---
+    let bgColor;
+    switch (category) {
+        case 'success':
+            bgColor = '#28a745'; // Green
+            break;
+        case 'warning':
+            bgColor = '#ffc107'; // Yellow
+            toast.style.color = '#333';
+            break;
+        case 'error':
+            bgColor = '#dc3545'; // Red
+            break;
+        default:
+            bgColor = '#17a2b8'; // Blue (Info)
+            break;
+    }
+    toast.style.backgroundColor = bgColor;
+
+    container.appendChild(toast);
+
+    // --- 나타나는 애니메이션 ---
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    }, 10);
+
+    // --- 자동으로 사라지는 로직 ---
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        toast.addEventListener('transitionend', () => {
+            toast.remove();
+        });
+    }, 5000);
+}
+
+/**
+ * 토스트 알림 컨테이너를 가져오거나 생성합니다.
+ * @returns {HTMLElement} 토스트 컨테이너 엘리먼트
+ */
+function getOrCreateToastContainer() {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.position = 'fixed';
+        container.style.top = '80px';
+        container.style.right = '20px';
+        container.style.zIndex = '2000';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.alignItems = 'flex-end';
+        container.style.gap = '10px';
+        document.body.appendChild(container);
+    }
+    return container;
 }
 
 /**

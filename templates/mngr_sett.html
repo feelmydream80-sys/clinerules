@@ -194,6 +194,18 @@
             z-index: 1;
         }
 
+        #mngr_sett_page .settings-table thead tr:first-child th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        #mngr_sett_page .settings-table thead tr:nth-child(2) th {
+            position: sticky;
+            top: 37px; /* 첫 번째 행의 높이에 맞춰 조정 */
+            z-index: 2;
+        }
+
         #mngr_sett_page .settings-table tbody tr:nth-child(even) {
             background-color: #f9f9f9;
         }
@@ -969,7 +981,6 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-semibold text-gray-700">Job ID별 기본 설정</h2>
                     <div class="flex gap-2">
-                        <button id="addRowBtn" class="save">행 추가</button>
                         <button id="saveBasicSettingsBtn" class="save">기본 설정 저장</button>
                     </div>
                 </div>
