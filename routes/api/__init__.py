@@ -355,6 +355,9 @@ def get_statistics_data():
                 weekly_stats = analytics_dao.get_menu_access_stats_weekly(year, menu_nm)
                 yearly_total = analytics_dao.get_yearly_total_stats(year, menu_nm)
                 
+                # 연간 차트 데이터 가져오기 (일별 데이터 기반으로 주별 집계)
+                yearly_chart_data = analytics_dao.get_menu_access_stats_weekly(year, menu_nm)
+                
                 # 주별 통계 데이터 구조화
                 structured_weekly_stats = []
                 monthly_data = {}
@@ -395,7 +398,8 @@ def get_statistics_data():
                 
                 return jsonify({
                     'weekly_stats': structured_weekly_stats,
-                    'yearly_total': yearly_total
+                    'yearly_total': yearly_total,
+                    'yearly_chart_data': yearly_chart_data
                 }), 200
                 
             elif view_type == 'comparison':
@@ -411,6 +415,10 @@ def get_statistics_data():
                 
                 this_year_total = analytics_dao.get_yearly_total_stats(this_year, menu_nm)
                 last_year_total = analytics_dao.get_yearly_total_stats(last_year, menu_nm)
+                
+                # 연간 차트 데이터 가져오기 (이번 년도와 작년)
+                yearly_chart_data_this_year = analytics_dao.get_menu_access_stats_weekly(this_year, menu_nm)
+                yearly_chart_data_last_year = analytics_dao.get_menu_access_stats_weekly(last_year, menu_nm)
                 
                 # 주별 통계 데이터 구조화 (이번 년도)
                 structured_this_year_stats = []
@@ -490,7 +498,9 @@ def get_statistics_data():
                     'yearly_total': {
                         'this_year': this_year_total,
                         'last_year': last_year_total
-                    }
+                    },
+                    'yearly_chart_data_this_year': yearly_chart_data_this_year,
+                    'yearly_chart_data_last_year': yearly_chart_data_last_year
                 }), 200
                 
             else:
@@ -537,10 +547,50 @@ def download_statistics():
                 
                 weekly_stats = analytics_dao.get_menu_access_stats_weekly(year, menu_nm)
                 yearly_total = analytics_dao.get_yearly_total_stats(year, menu_nm)
+                yearly_chart_data = analytics_dao.get_menu_access_stats_weekly(year, menu_nm)
+                
+                # 주별 통계 데이터 구조화
+                structured_weekly_stats = []
+                monthly_data = {}
+                
+                for stat in weekly_stats:
+                    month = stat['month']
+                    week = stat['week_of_month']
+                    menu = stat['menu_nm']
+                    
+                    if month not in monthly_data:
+                        monthly_data[month] = {}
+                    
+                    if week not in monthly_data[month]:
+                        monthly_data[month][week] = {
+                            'month': month,
+                            'week': week,
+                            'menus': [],
+                            'site_unique_user_count': 0
+                        }
+                    
+                    monthly_data[month][week]['menus'].append({
+                        'menu_nm': menu,
+                        'total_access_count': stat['total_access_count'],
+                        'unique_user_count': stat['unique_user_count']
+                    })
+                
+                # site_unique_user_count 추가 (주별 전체 순 방문자 수)
+                weekly_site_unique = analytics_dao.get_total_unique_users_by_week(year)
+                for month, weeks in monthly_data.items():
+                    for week, week_data in weeks.items():
+                        if (month, week) in weekly_site_unique:
+                            week_data['site_unique_user_count'] = weekly_site_unique[(month, week)]
+                
+                # 구조화된 데이터를 리스트로 변환
+                for month in sorted(monthly_data.keys()):
+                    for week in sorted(monthly_data[month].keys()):
+                        structured_weekly_stats.append(monthly_data[month][week])
                 
                 return jsonify({
-                    'weekly_stats': weekly_stats,
-                    'yearly_total': yearly_total
+                    'weekly_stats': structured_weekly_stats,
+                    'yearly_total': yearly_total,
+                    'yearly_chart_data': yearly_chart_data
                 }), 200
                 
             elif view_type == 'comparison':
@@ -556,13 +606,90 @@ def download_statistics():
                 this_year_total = analytics_dao.get_yearly_total_stats(this_year, menu_nm)
                 last_year_total = analytics_dao.get_yearly_total_stats(last_year, menu_nm)
                 
+                yearly_chart_data_this_year = analytics_dao.get_menu_access_stats_weekly(this_year, menu_nm)
+                yearly_chart_data_last_year = analytics_dao.get_menu_access_stats_weekly(last_year, menu_nm)
+                
+                # 주별 통계 데이터 구조화 (이번 년도)
+                structured_this_year_stats = []
+                monthly_data = {}
+                
+                for stat in this_year_stats:
+                    month = stat['month']
+                    week = stat['week_of_month']
+                    menu = stat['menu_nm']
+                    
+                    if month not in monthly_data:
+                        monthly_data[month] = {}
+                    
+                    if week not in monthly_data[month]:
+                        monthly_data[month][week] = {
+                            'month': month,
+                            'week': week,
+                            'menus': [],
+                            'site_unique_user_count': 0
+                        }
+                    
+                    monthly_data[month][week]['menus'].append({
+                        'menu_nm': menu,
+                        'total_access_count': stat['total_access_count'],
+                        'unique_user_count': stat['unique_user_count']
+                    })
+                
+                weekly_site_unique = analytics_dao.get_total_unique_users_by_week(this_year)
+                for month, weeks in monthly_data.items():
+                    for week, week_data in weeks.items():
+                        if (month, week) in weekly_site_unique:
+                            week_data['site_unique_user_count'] = weekly_site_unique[(month, week)]
+                
+                for month in sorted(monthly_data.keys()):
+                    for week in sorted(monthly_data[month].keys()):
+                        structured_this_year_stats.append(monthly_data[month][week])
+                
+                # 주별 통계 데이터 구조화 (작년)
+                structured_last_year_stats = []
+                monthly_data = {}
+                
+                for stat in last_year_stats:
+                    month = stat['month']
+                    week = stat['week_of_month']
+                    menu = stat['menu_nm']
+                    
+                    if month not in monthly_data:
+                        monthly_data[month] = {}
+                    
+                    if week not in monthly_data[month]:
+                        monthly_data[month][week] = {
+                            'month': month,
+                            'week': week,
+                            'menus': [],
+                            'site_unique_user_count': 0
+                        }
+                    
+                    monthly_data[month][week]['menus'].append({
+                        'menu_nm': menu,
+                        'total_access_count': stat['total_access_count'],
+                        'unique_user_count': stat['unique_user_count']
+                    })
+                
+                weekly_site_unique = analytics_dao.get_total_unique_users_by_week(last_year)
+                for month, weeks in monthly_data.items():
+                    for week, week_data in weeks.items():
+                        if (month, week) in weekly_site_unique:
+                            week_data['site_unique_user_count'] = weekly_site_unique[(month, week)]
+                
+                for month in sorted(monthly_data.keys()):
+                    for week in sorted(monthly_data[month].keys()):
+                        structured_last_year_stats.append(monthly_data[month][week])
+                
                 return jsonify({
-                    'this_year_stats': this_year_stats,
-                    'last_year_stats': last_year_stats,
+                    'this_year_stats': structured_this_year_stats,
+                    'last_year_stats': structured_last_year_stats,
                     'yearly_total': {
                         'this_year': this_year_total,
                         'last_year': last_year_total
-                    }
+                    },
+                    'yearly_chart_data_this_year': yearly_chart_data_this_year,
+                    'yearly_chart_data_last_year': yearly_chart_data_last_year
                 }), 200
                 
             else:

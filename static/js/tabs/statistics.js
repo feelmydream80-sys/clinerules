@@ -37,6 +37,9 @@ class StatisticsTab {
             chartCanvas: null,
             chartInstance: null
         };
+        
+        // 이벤트 리스너 등록 상태 추적
+        this.eventListenersInitialized = false;
     }
 
     /**
@@ -81,24 +84,73 @@ class StatisticsTab {
      * 이벤트 리스너 등록
      */
     initEventListeners() {
-        if (this.elements.tab) {
-            this.elements.tab.addEventListener('click', () => this.loadConfig());
+        // 이벤트 리스너 등록 횟수 추적
+        if (!this.eventListenerCount) {
+            this.eventListenerCount = 0;
         }
+        this.eventListenerCount++;
+        console.log(`Event listener registration called ${this.eventListenerCount} time(s)`);
 
-        if (this.elements.excelDownloadBtn) {
-            this.elements.excelDownloadBtn.addEventListener('click', () => this.downloadExcel());
-        }
-
-        const autoLoadStats = () => {
+        // 클래스 프로퍼티로 이벤트 핸들러 정의 (중복 등록 방지)
+        this.handleTabClick = () => this.loadConfig();
+        this.handleDownloadClick = () => this.downloadExcel();
+        this.autoLoadStats = () => {
             this.toggleView();
             this.loadData();
         };
+        this.handleYearChange = () => this.loadData();
+        this.handleDateChange = () => this.loadData();
 
-        if (this.elements.dailyViewRadio) this.elements.dailyViewRadio.addEventListener('change', autoLoadStats);
-        if (this.elements.weeklyMonthlyViewRadio) this.elements.weeklyMonthlyViewRadio.addEventListener('change', autoLoadStats);
-        if (this.elements.comparisonViewRadio) this.elements.comparisonViewRadio.addEventListener('change', autoLoadStats);
-        if (this.elements.yearSelect) this.elements.yearSelect.addEventListener('change', () => this.loadData());
-        if (this.elements.startDateInput) this.elements.startDateInput.addEventListener('change', () => this.loadData());
+        // 이벤트 리스너 등록과 제거를 로그로 추적
+        console.log('Event listener registration started');
+
+        // 기존 이벤트 리스너를 전부 제거한 후 새로 등록
+        if (this.elements.tab) {
+            console.log('Removing tab click listener');
+            this.elements.tab.removeEventListener('click', this.handleTabClick);
+            console.log('Adding tab click listener');
+            this.elements.tab.addEventListener('click', this.handleTabClick);
+        }
+
+        if (this.elements.excelDownloadBtn) {
+            console.log('Removing excel download listener');
+            this.elements.excelDownloadBtn.removeEventListener('click', this.handleDownloadClick);
+            console.log('Adding excel download listener');
+            this.elements.excelDownloadBtn.addEventListener('click', this.handleDownloadClick);
+        }
+
+        if (this.elements.dailyViewRadio) {
+            console.log('Removing daily view radio listener');
+            this.elements.dailyViewRadio.removeEventListener('change', this.autoLoadStats);
+            console.log('Adding daily view radio listener');
+            this.elements.dailyViewRadio.addEventListener('change', this.autoLoadStats);
+        }
+        if (this.elements.weeklyMonthlyViewRadio) {
+            console.log('Removing weekly monthly view radio listener');
+            this.elements.weeklyMonthlyViewRadio.removeEventListener('change', this.autoLoadStats);
+            console.log('Adding weekly monthly view radio listener');
+            this.elements.weeklyMonthlyViewRadio.addEventListener('change', this.autoLoadStats);
+        }
+        if (this.elements.comparisonViewRadio) {
+            console.log('Removing comparison view radio listener');
+            this.elements.comparisonViewRadio.removeEventListener('change', this.autoLoadStats);
+            console.log('Adding comparison view radio listener');
+            this.elements.comparisonViewRadio.addEventListener('change', this.autoLoadStats);
+        }
+        if (this.elements.yearSelect) {
+            console.log('Removing year select listener');
+            this.elements.yearSelect.removeEventListener('change', this.handleYearChange);
+            console.log('Adding year select listener');
+            this.elements.yearSelect.addEventListener('change', this.handleYearChange);
+        }
+        if (this.elements.startDateInput) {
+            console.log('Removing start date input listener');
+            this.elements.startDateInput.removeEventListener('change', this.handleDateChange);
+            console.log('Adding start date input listener');
+            this.elements.startDateInput.addEventListener('change', this.handleDateChange);
+        }
+
+        console.log('Event listener registration completed');
     }
 
     /**
@@ -213,11 +265,11 @@ class StatisticsTab {
                 this.renderDailyStats(data);
             } else if (viewType === 'weekly_monthly') {
                 this.renderWeeklyMonthlyStats(data);
-                if (data.yearly_chart_data) {
-                    this.renderLineChart(data.yearly_chart_data, data.weekly_stats);
-                }
+                // 주별/월별 뷰에서는 라인 차트 렌더링
+                this.renderLineChart(data.yearly_chart_data, data.weekly_stats);
             } else if (viewType === 'comparison') {
                 this.renderComparisonStats(data);
+                // 연도별 비교 뷰에서는 비교 라인 차트 렌더링
                 this.renderComparisonLineChart(data);
             }
         } catch (error) {
@@ -320,6 +372,19 @@ class StatisticsTab {
                 const weeksInMonth = monthlyData[month];
                 const totalRowsInMonth = weeksInMonth.reduce((sum, week) => sum + week.menus.length, 0);
                 
+                // 월간 총계 계산
+                let monthlyTotalAccessCount = 0;
+                let monthlyTotalMenuUniqueUserCount = 0;
+                let monthlyTotalSiteUniqueUserCount = 0;
+                
+                weeksInMonth.forEach(weekData => {
+                    weekData.menus.forEach(menu => {
+                        monthlyTotalAccessCount += menu.total_access_count || 0;
+                        monthlyTotalMenuUniqueUserCount += menu.unique_user_count || 0;
+                    });
+                    monthlyTotalSiteUniqueUserCount += weekData.site_unique_user_count || 0;
+                });
+                
                 weeksInMonth.forEach((weekData, weekIndex) => {
                     weekData.menus.forEach((menu, menuIndex) => {
                         const row = tbody.insertRow();
@@ -327,7 +392,7 @@ class StatisticsTab {
                         if (weekIndex === 0 && menuIndex === 0) {
                             const monthCell = row.insertCell();
                             monthCell.textContent = `${month}월`;
-                            monthCell.rowSpan = totalRowsInMonth;
+                            monthCell.rowSpan = totalRowsInMonth + 1; // 월간 총계 행 추가
                             monthCell.style.verticalAlign = 'middle';
                         }
 
@@ -350,6 +415,27 @@ class StatisticsTab {
                         }
                     });
                 });
+                
+                // 월간 총계 행 추가
+                const monthlyTotalRow = tbody.insertRow();
+                monthlyTotalRow.style.fontWeight = 'bold';
+                monthlyTotalRow.style.backgroundColor = '#f3f4f6'; // 연한 회색 배경
+                
+                // 월, 주차 셀은 건너뜀 (rowspan으로 이미 차지됨)
+                monthlyTotalRow.insertCell(); // 월 셀
+                monthlyTotalRow.insertCell(); // 주차 셀
+                
+                const monthlyTotalLabelCell = monthlyTotalRow.insertCell();
+                monthlyTotalLabelCell.textContent = `${month}월 총계`;
+                
+                const monthlyTotalAccessCell = monthlyTotalRow.insertCell();
+                monthlyTotalAccessCell.textContent = monthlyTotalAccessCount.toLocaleString();
+                
+                const monthlyTotalMenuUniqueCell = monthlyTotalRow.insertCell();
+                monthlyTotalMenuUniqueCell.textContent = monthlyTotalMenuUniqueUserCount.toLocaleString();
+                
+                const monthlyTotalSiteUniqueCell = monthlyTotalRow.insertCell();
+                monthlyTotalSiteUniqueCell.textContent = monthlyTotalSiteUniqueUserCount.toLocaleString();
             });
         } else {
             const row = tbody.insertRow();
@@ -359,13 +445,51 @@ class StatisticsTab {
             cell.style.textAlign = 'center';
         }
 
-        // 연간 총계 푸터 생성
+        // 월별 총계 푸터 생성
         let tfoot = table.querySelector('tfoot');
         if (!tfoot) {
             tfoot = table.createTFoot();
         }
         tfoot.innerHTML = ''; // 기존 푸터 내용 제거
 
+        if (weekly_stats && weekly_stats.length > 0) {
+            // 월별 총계 집계
+            const monthlyTotals = {};
+            weekly_stats.forEach(week => {
+                if (!monthlyTotals[week.month]) {
+                    monthlyTotals[week.month] = {
+                        total_access_count: 0,
+                        total_menu_unique_user_count: 0,
+                        total_site_unique_user_count: 0
+                    };
+                }
+                
+                week.menus.forEach(menu => {
+                    monthlyTotals[week.month].total_access_count += menu.total_access_count || 0;
+                    monthlyTotals[week.month].total_menu_unique_user_count += menu.unique_user_count || 0;
+                });
+                
+                monthlyTotals[week.month].total_site_unique_user_count += week.site_unique_user_count || 0;
+            });
+            
+            // 월별 총계 행 추가
+            Object.keys(monthlyTotals).sort((a, b) => a - b).forEach(month => {
+                const monthlyTotalRow = tfoot.insertRow();
+                monthlyTotalRow.style.fontWeight = 'bold';
+                monthlyTotalRow.style.backgroundColor = '#e5e7eb'; // 연한 회색 배경
+                
+                const monthCell = monthlyTotalRow.insertCell();
+                monthCell.textContent = `${month}월 총계`;
+                monthCell.colSpan = 3;
+                monthCell.style.textAlign = 'center';
+                
+                monthlyTotalRow.insertCell().textContent = monthlyTotals[month].total_access_count.toLocaleString();
+                monthlyTotalRow.insertCell().textContent = monthlyTotals[month].total_menu_unique_user_count.toLocaleString();
+                monthlyTotalRow.insertCell().textContent = monthlyTotals[month].total_site_unique_user_count.toLocaleString();
+            });
+        }
+        
+        // 연간 총계 푸터 생성
         if (yearly_total) {
             const footerRow = tfoot.insertRow();
             const totalCell = footerRow.insertCell();
@@ -373,6 +497,7 @@ class StatisticsTab {
             totalCell.textContent = '연간 총계';
             totalCell.style.fontWeight = 'bold';
             totalCell.style.textAlign = 'center';
+            totalCell.style.backgroundColor = '#d1d5db'; // 약간 더 진한 회색 배경
 
             footerRow.insertCell().textContent = (yearly_total.total_access_count || 0).toLocaleString();
             footerRow.insertCell().textContent = (yearly_total.total_menu_unique_user_count || 0).toLocaleString();
@@ -551,8 +676,22 @@ class StatisticsTab {
      * 엑셀 다운로드
      */
     async downloadExcel() {
+        // 다운로드 중인지 확인 (중복 호출 방지)
+        if (this.isDownloading) {
+            console.log('Excel download already in progress');
+            return;
+        }
+        this.isDownloading = true;
+
+        // 이벤트 리스너 중복 호출 방지: 다운로드 중에는 이벤트 리스너를 제거
+        console.log('Excel download started');
+        this.elements.excelDownloadBtn.removeEventListener('click', this.handleDownloadClick);
+
         if (typeof XLSX === 'undefined') {
             console.warn('엑셀 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
+            // 이벤트 리스너 재등록
+            this.elements.excelDownloadBtn.addEventListener('click', this.handleDownloadClick);
+            this.isDownloading = false;
             return;
         }
         
@@ -589,18 +728,66 @@ class StatisticsTab {
             } else if (viewType === 'weekly_monthly') {
                 fileName = `주별-월별_접속통계_${year}.xlsx`;
                 ws_data = [['월', '주차', '메뉴', '총 접속 횟수', '메뉴별 순 방문자 수', '사이트 순 방문자 수']];
-                data.weekly_stats.forEach(week => {
-                    week.menus.forEach((menu, index) => {
+                
+                if (data.weekly_stats && Array.isArray(data.weekly_stats)) {
+                    data.weekly_stats.forEach(week => {
+                        if (week.menus && Array.isArray(week.menus)) {
+                            week.menus.forEach((menu, index) => {
+                                ws_data.push([
+                                    index === 0 ? `${week.month}월` : '',
+                                    index === 0 ? `${week.week}주` : '',
+                                    menu.menu_nm,
+                                    menu.total_access_count,
+                                    menu.unique_user_count,
+                                    index === 0 ? week.site_unique_user_count : ''
+                                ]);
+                            });
+                        }
+                    });
+
+                    // 월간 총계 추가
+                    const monthlyTotals = {};
+                    data.weekly_stats.forEach(week => {
+                        if (!monthlyTotals[week.month]) {
+                            monthlyTotals[week.month] = {
+                                total_access_count: 0,
+                                total_menu_unique_user_count: 0,
+                                total_site_unique_user_count: 0
+                            };
+                        }
+                        
+                        week.menus.forEach(menu => {
+                            monthlyTotals[week.month].total_access_count += menu.total_access_count || 0;
+                            monthlyTotals[week.month].total_menu_unique_user_count += menu.unique_user_count || 0;
+                        });
+                        
+                        monthlyTotals[week.month].total_site_unique_user_count += week.site_unique_user_count || 0;
+                    });
+
+                    Object.keys(monthlyTotals).sort((a, b) => a - b).forEach(month => {
                         ws_data.push([
-                            index === 0 ? `${week.month}월` : '',
-                            index === 0 ? `${week.week}주` : '',
-                            menu.menu_nm,
-                            menu.total_access_count,
-                            menu.unique_user_count,
-                            index === 0 ? week.site_unique_user_count : ''
+                            `${month}월 총계`,
+                            '',
+                            '',
+                            monthlyTotals[month].total_access_count,
+                            monthlyTotals[month].total_menu_unique_user_count,
+                            monthlyTotals[month].total_site_unique_user_count
                         ]);
                     });
-                });
+
+                    // 연간 총계 추가
+                    if (data.yearly_total) {
+                        ws_data.push([
+                            '연간 총계',
+                            '',
+                            '',
+                            data.yearly_total.total_access_count,
+                            data.yearly_total.total_menu_unique_user_count,
+                            data.yearly_total.total_site_unique_user_count
+                        ]);
+                    }
+                }
+                
                 ws = XLSX.utils.aoa_to_sheet(ws_data);
                 XLSX.utils.book_append_sheet(wb, ws, "주별-월별 통계");
 
@@ -610,18 +797,20 @@ class StatisticsTab {
                 
                 const combinedData = {};
                 const processData = (stats, year_label) => {
-                    if (!stats) return;
+                    if (!stats || !Array.isArray(stats)) return;
                     stats.forEach(week => {
                         const weekKey = `${week.month}-${week.week}`;
                         if (!combinedData[weekKey]) combinedData[weekKey] = { month: week.month, week: week.week, menus: {} };
-                        week.menus.forEach(menu => {
-                            const menuKey = menu.menu_nm;
-                            if (!combinedData[weekKey].menus[menuKey]) combinedData[weekKey].menus[menuKey] = {};
-                            combinedData[weekKey].menus[menuKey][year_label] = {
-                                ...menu,
-                                site_unique: week.site_unique_user_count
-                            };
-                        });
+                        if (week.menus && Array.isArray(week.menus)) {
+                            week.menus.forEach(menu => {
+                                const menuKey = menu.menu_nm;
+                                if (!combinedData[weekKey].menus[menuKey]) combinedData[weekKey].menus[menuKey] = {};
+                                combinedData[weekKey].menus[menuKey][year_label] = {
+                                    ...menu,
+                                    site_unique: week.site_unique_user_count
+                                };
+                            });
+                        }
                     });
                 };
                 processData(data.this_year_stats, year);
@@ -641,6 +830,82 @@ class StatisticsTab {
                         }
                     });
                 });
+
+                // 월간 총계 추가
+                if (data.this_year_stats && data.last_year_stats) {
+                    const monthlyTotals = {};
+                    const processMonthlyData = (stats, year_param) => {
+                        if (!stats) return;
+                        stats.forEach(week => {
+                            if (!monthlyTotals[week.month]) {
+                                monthlyTotals[week.month] = {
+                                    this_year: { total_access_count: 0, total_menu_unique_user_count: 0, total_site_unique_user_count: 0 },
+                                    last_year: { total_access_count: 0, total_menu_unique_user_count: 0, total_site_unique_user_count: 0 }
+                                };
+                            }
+                            
+                            week.menus.forEach(menu => {
+                                monthlyTotals[week.month][year_param].total_access_count += menu.total_access_count || 0;
+                                monthlyTotals[week.month][year_param].total_menu_unique_user_count += menu.unique_user_count || 0;
+                            });
+                            
+                            monthlyTotals[week.month][year_param].total_site_unique_user_count += week.site_unique_user_count || 0;
+                        });
+                    };
+                    
+                    processMonthlyData(data.this_year_stats, 'this_year');
+                    processMonthlyData(data.last_year_stats, 'last_year');
+                    
+                    Object.keys(monthlyTotals).sort((a, b) => a - b).forEach(month => {
+                        // 이번 년도 월간 총계
+                        ws_data.push([
+                            `${month}월 총계`,
+                            '',
+                            '',
+                            year,
+                            monthlyTotals[month].this_year.total_access_count,
+                            monthlyTotals[month].this_year.total_menu_unique_user_count,
+                            monthlyTotals[month].this_year.total_site_unique_user_count
+                        ]);
+                        
+                        // 작년 월간 총계
+                        ws_data.push([
+                            `${month}월 총계`,
+                            '',
+                            '',
+                            year - 1,
+                            monthlyTotals[month].last_year.total_access_count,
+                            monthlyTotals[month].last_year.total_menu_unique_user_count,
+                            monthlyTotals[month].last_year.total_site_unique_user_count
+                        ]);
+                    });
+                }
+
+                // 연간 총계 추가
+                if (data.yearly_total) {
+                    // 이번 년도 연간 총계
+                    ws_data.push([
+                        '연간 총계',
+                        '',
+                        '',
+                        year,
+                        data.yearly_total.this_year.total_access_count,
+                        data.yearly_total.this_year.total_menu_unique_user_count,
+                        data.yearly_total.this_year.total_site_unique_user_count
+                    ]);
+                    
+                    // 작년 연간 총계
+                    ws_data.push([
+                        '연간 총계',
+                        '',
+                        '',
+                        year - 1,
+                        data.yearly_total.last_year.total_access_count,
+                        data.yearly_total.last_year.total_menu_unique_user_count,
+                        data.yearly_total.last_year.total_site_unique_user_count
+                    ]);
+                }
+
                 ws = XLSX.utils.aoa_to_sheet(ws_data);
                 XLSX.utils.book_append_sheet(wb, ws, "연도별 비교 통계");
             }
@@ -654,6 +919,12 @@ class StatisticsTab {
 
         } catch (error) {
             console.error(`엑셀 다운로드 오류: ${error.message}`);
+        } finally {
+            // 이벤트 리스너 재등록
+            this.elements.excelDownloadBtn.addEventListener('click', this.handleDownloadClick);
+            console.log('Excel download event listener re-added');
+            // 다운로드 중 플래그 초기화
+            this.isDownloading = false;
         }
     }
 
@@ -805,14 +1076,88 @@ class StatisticsTab {
             });
         });
 
-        // 푸터 생성
+        // 월별 총계 푸터 생성
         const tfoot = table.createTFoot();
         tfoot.innerHTML = ''; // 기존 내용 제거
+
+        if (this_year_stats && this_year_stats.length > 0) {
+            // 월별 총계 집계
+            const monthlyTotals = {};
+            const processMonthlyData = (stats, year) => {
+                if (!stats) return;
+                stats.forEach(week => {
+                    if (!monthlyTotals[week.month]) {
+                        monthlyTotals[week.month] = {
+                            this_year: { total_access_count: 0, total_menu_unique_user_count: 0, total_site_unique_user_count: 0 },
+                            last_year: { total_access_count: 0, total_menu_unique_user_count: 0, total_site_unique_user_count: 0 }
+                        };
+                    }
+                    
+                    week.menus.forEach(menu => {
+                        monthlyTotals[week.month][year].total_access_count += menu.total_access_count || 0;
+                        monthlyTotals[week.month][year].total_menu_unique_user_count += menu.unique_user_count || 0;
+                    });
+                    
+                    monthlyTotals[week.month][year].total_site_unique_user_count += week.site_unique_user_count || 0;
+                });
+            };
+            
+            processMonthlyData(this_year_stats, 'this_year');
+            processMonthlyData(last_year_stats, 'last_year');
+            
+            // 월별 총계 행 추가
+            Object.keys(monthlyTotals).sort((a, b) => a - b).forEach(month => {
+                const monthlyTotalRow = tfoot.insertRow();
+                monthlyTotalRow.style.fontWeight = 'bold';
+                monthlyTotalRow.style.backgroundColor = '#e5e7eb'; // 연한 회색 배경
+                
+                const monthCell = monthlyTotalRow.insertCell();
+                monthCell.textContent = `${month}월 총계`;
+                monthCell.colSpan = 3;
+                monthCell.style.textAlign = 'center';
+                
+                // 총 접속 횟수
+                const currentAccess = monthlyTotals[month].this_year.total_access_count;
+                const previousAccess = monthlyTotals[month].last_year.total_access_count;
+                const accessCell = monthlyTotalRow.insertCell();
+                accessCell.innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <span>${currentAccess.toLocaleString()} / ${previousAccess.toLocaleString()}</span>
+                        ${getGrowthHtml(currentAccess, previousAccess)}
+                    </div>
+                `;
+                
+                // 메뉴별 순 방문자 수
+                const currentMenuUnique = monthlyTotals[month].this_year.total_menu_unique_user_count;
+                const previousMenuUnique = monthlyTotals[month].last_year.total_menu_unique_user_count;
+                const menuUniqueCell = monthlyTotalRow.insertCell();
+                menuUniqueCell.innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <span>${currentMenuUnique.toLocaleString()} / ${previousMenuUnique.toLocaleString()}</span>
+                        ${getGrowthHtml(currentMenuUnique, previousMenuUnique)}
+                    </div>
+                `;
+                
+                // 사이트 순 방문자 수
+                const currentSiteUnique = monthlyTotals[month].this_year.total_site_unique_user_count;
+                const previousSiteUnique = monthlyTotals[month].last_year.total_site_unique_user_count;
+                const siteUniqueCell = monthlyTotalRow.insertCell();
+                siteUniqueCell.innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <span>${currentSiteUnique.toLocaleString()} / ${previousSiteUnique.toLocaleString()}</span>
+                        ${getGrowthHtml(currentSiteUnique, previousSiteUnique)}
+                    </div>
+                `;
+            });
+        }
+        
+        // 연간 총계 푸터 생성
         if (yearly_total) {
             const thisYear = yearly_total.this_year || {};
             const lastYear = yearly_total.last_year || {};
             const footerRow = tfoot.insertRow();
             footerRow.innerHTML = `<td colspan="3" class="text-center font-bold">연간 총계</td>`;
+            footerRow.style.backgroundColor = '#d1d5db'; // 약간 더 진한 회색 배경
 
             const fields = ['total_access_count', 'total_menu_unique_user_count', 'total_site_unique_user_count'];
             fields.forEach(field => {
@@ -929,8 +1274,15 @@ class StatisticsTab {
      * 탭이 활성화될 때 호출되는 메서드
      */
     activate() {
+        console.log('StatisticsTab activate called');
         this.initElements();
-        this.initEventListeners();
+        // 이벤트 리스너가 이미 등록되어 있는지 확인 (중복 등록 방지)
+        if (!this.eventListenersInitialized) {
+            this.initEventListeners();
+            this.eventListenersInitialized = true;
+        } else {
+            console.log('Event listeners already initialized');
+        }
         this.loadConfig();
     }
 }
