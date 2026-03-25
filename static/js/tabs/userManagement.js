@@ -24,6 +24,12 @@ class UserManagementTab {
         
         // 디바운스 타이머
         this.debounceTimer = null;
+        
+        // 페이징 상태 관리
+        this.currentPage = 1;
+        this.itemsPerPage = 10;
+        this.totalPages = 1;
+        this.totalUsers = 0;
     }
 
     /**
@@ -125,7 +131,14 @@ class UserManagementTab {
             return dateB - dateA;
         });
         
-        users.forEach(user => {
+        // 페이징 계산
+        this.totalUsers = users.length;
+        this.totalPages = Math.ceil(this.totalUsers / this.itemsPerPage);
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const pagedUsers = users.slice(startIndex, endIndex);
+        
+        pagedUsers.forEach(user => {
             const row = document.createElement('tr');
             const createdAt = user.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : 'N/A';
 
@@ -148,6 +161,104 @@ class UserManagementTab {
         });
 
         this.addEventListenersToButtons();
+
+        // 페이징 버튼 생성
+        this.renderPagination();
+    }
+
+    /**
+     * 페이징 버튼 렌더링
+     */
+    renderPagination() {
+        const container = document.getElementById('mngr_sett_page');
+        if (!container) return;
+
+        // 기존 페이징 컨테이너가 있으면 제거
+        const existingPagination = container.querySelector('#userManagementPagination');
+        if (existingPagination) {
+            existingPagination.remove();
+        }
+
+        // 페이징 컨테이너 생성
+        const paginationContainer = document.createElement('div');
+        paginationContainer.id = 'userManagementPagination';
+        paginationContainer.className = 'flex justify-center items-center gap-2 mt-4';
+
+        // 이전 페이지 버튼
+        const prevBtn = document.createElement('button');
+        prevBtn.textContent = '이전';
+        prevBtn.className = 'btn';
+        prevBtn.style.cssText = 'padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer;';
+        prevBtn.disabled = this.currentPage === 1;
+        prevBtn.addEventListener('click', () => {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                this.refreshTable();
+            }
+        });
+
+        // 페이지 번호 버튼
+        const pageNumbersContainer = document.createElement('div');
+        pageNumbersContainer.style.cssText = 'display: flex; gap: 5px;';
+
+        for (let i = 1; i <= this.totalPages; i++) {
+            const pageBtn = document.createElement('button');
+            pageBtn.textContent = i;
+            pageBtn.className = `btn ${i === this.currentPage ? 'btn-primary' : ''}`;
+            pageBtn.style.cssText = 'padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer;';
+            if (i === this.currentPage) {
+                pageBtn.style.backgroundColor = '#007bff';
+                pageBtn.style.color = 'white';
+                pageBtn.style.borderColor = '#007bff';
+            }
+            pageBtn.addEventListener('click', () => {
+                this.currentPage = i;
+                this.refreshTable();
+            });
+            pageNumbersContainer.appendChild(pageBtn);
+        }
+
+        // 다음 페이지 버튼
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = '다음';
+        nextBtn.className = 'btn';
+        nextBtn.style.cssText = 'padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer;';
+        nextBtn.disabled = this.currentPage === this.totalPages;
+        nextBtn.addEventListener('click', () => {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+                this.refreshTable();
+            }
+        });
+
+        // 표시 수량 콤보박스
+        const itemsPerPageSelect = document.createElement('select');
+        itemsPerPageSelect.style.cssText = 'padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; margin-right: 15px;';
+        [5, 10, 20, 50, 100].forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option;
+            optionElement.textContent = `${option} 건`;
+            if (option === this.itemsPerPage) {
+                optionElement.selected = true;
+            }
+            itemsPerPageSelect.appendChild(optionElement);
+        });
+        itemsPerPageSelect.addEventListener('change', (e) => {
+            this.itemsPerPage = parseInt(e.target.value);
+            this.currentPage = 1;
+            this.refreshTable();
+        });
+
+        paginationContainer.appendChild(itemsPerPageSelect);
+        paginationContainer.appendChild(prevBtn);
+        paginationContainer.appendChild(pageNumbersContainer);
+        paginationContainer.appendChild(nextBtn);
+
+        // 테이블 아래에 페이징 컨테이너 추가
+        const userTable = container.querySelector('#userTableBody').parentElement.parentElement;
+        if (userTable) {
+            userTable.parentNode.appendChild(paginationContainer);
+        }
     }
 
     /**

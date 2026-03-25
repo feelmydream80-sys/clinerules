@@ -19,7 +19,7 @@ import { init as initDataDefinition } from '../tabs/dataDefinition/dataDefinitio
 
 // 외부 모듈들 가져오기
 import { setDataFlowStatus } from '../modules/common/api/client.js';
-import { setupTabs, renderSettingsTable, renderIconTable, populateIconSelects, initUI } from '../modules/mngr_sett/ui.js';
+import { setupTabs, renderSettingsTable, renderIconTable, populateIconSelects, initUI, initSettingsPagination } from '../modules/mngr_sett/ui.js';
 import { getAdminSettings, getIcons } from '../modules/mngr_sett/data.js';
 import {
     initializeIconManagementUI,
@@ -870,6 +870,8 @@ async function initializePage() {
         toggleIconDisplayStatus
     });
     initializeIconManagementUI();
+    // 페이징 기능 초기화
+    initSettingsPagination();
     
     // 탭 모듈 초기화
     statisticsTab.initElements();

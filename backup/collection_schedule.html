@@ -67,66 +67,21 @@
         padding: 0.75rem;
         z-index: 40; /* Lower z-index to be below nav menu (nav is z-50) */
         width: max-content;
-        max-width: 600px; /* 5열 레이아웃에 적합한 너비로 증가 */
+        max-width: 350px; /* Added max-width to prevent excessively wide popups */
+        /* Removed max-height and overflow-y to allow popup to expand without scroll */
         box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         text-align: left;
         transition: opacity 0.2s;
-    }
-
-    /* 팝업 내부 그리드 레이아웃 */
-    .popup .popup-content {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr); /* 5열 그리드 */
-        gap: 0.25rem; /* Job Pill 간격 최적화 */
-        margin-bottom: 0.75rem;
     }
 
     /* .group-container:hover .popup {
         display: block;
     } */
     .popup .job-pill {
-        margin-bottom: 0; /* 그리드 레이아웃에서 margin-bottom 제거 */
-        font-size: 0.75rem; /* Job Pill 글자 크기 조정 */
-        padding: 0.2rem 0.5rem; /* Job Pill 크기 최적화 */
+        margin-bottom: 0.25rem;
     }
-
-    /* 페이징 컨트롤 스타일 */
-    .popup .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.8rem;
-        color: #4b5563;
-        padding-top: 0.5rem;
-        border-top: 1px solid #e5e7eb;
-    }
-
-    .popup .pagination button {
-        padding: 0.25rem 0.5rem;
-        border: 1px solid #d1d5db;
-        border-radius: 4px;
-        background-color: #fff;
-        cursor: pointer;
-        font-size: 0.75rem;
-    }
-
-    .popup .pagination button:hover {
-        background-color: #f3f4f6;
-    }
-
-    .popup .pagination button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .popup .pagination .current-page {
-        font-weight: bold;
-        color: #3b82f6;
-    }
-
-    .popup .pagination .page-info {
-        margin: 0 0.5rem;
+    .popup .job-pill:last-child {
+        margin-bottom: 0;
     }
     .settings-container {
         background-color: #f9fafb;
@@ -216,19 +171,6 @@
             <button class="btn active" id="weekly-btn">주간</button>
             <button class="btn" id="monthly-btn">월간</button>
             {% endif %}
-            <!-- 주간/월간 네비게이션 -->
-            <div style="display: inline-flex; gap: 0.5rem; margin-left: 1rem; align-items: center;">
-                <!-- 주간 네비게이션 -->
-                <div id="week-navigation" style="display: inline-flex; gap: 0.5rem;">
-                    <button class="btn" id="prev-week-btn">← 지난 주</button>
-                    <button class="btn" id="next-week-btn">다음 주 →</button>
-                </div>
-                <!-- 월간 네비게이션 -->
-                <div id="month-navigation" style="display: inline-flex; gap: 0.5rem; margin-left: 0.5rem;">
-                    <button class="btn" id="prev-month-btn">← 지난달</button>
-                    <button class="btn" id="next-month-btn">다음달 →</button>
-                </div>
-            </div>
         </div>
         
 

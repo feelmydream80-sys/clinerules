@@ -18,8 +18,6 @@ export function init() {
     const toggleIcon = document.getElementById('toggle-icon');
     
     let mstData = {}; // For mapping job_id to name
-    let monthOffset = 0; // 월 오프셋: 0=현재월, -1=지난달, 1=다음달
-    let weekOffset = 0; // 주 오프셋: 0=이번 주, -1=지난 주, 1=다음 주
 
     // --- Guide Popup ---
     const guideToggleBtn = document.getElementById('guide-toggle-btn');
@@ -335,20 +333,11 @@ export function init() {
                     // 팝업 로직 (주간/월간 모두 동일)
                     const popup = document.createElement('div');
                     popup.className = 'popup';
-                    
-                    // 팝업 내용 컨테이너 (5열 그리드)
-                    const popupContent = document.createElement('div');
-                    popupContent.className = 'popup-content';
-                    
-                    // 정렬된 Job 목록
-                    const sortedJobs = groupJobs.sort((a, b) => {
+                    groupJobs.sort((a, b) => {
                         const numA = parseInt(a.job_id.replace('CD', ''), 10);
                         const numB = parseInt(b.job_id.replace('CD', ''), 10);
                         return numA - numB;
-                    });
-
-                    // Job Pill 생성
-                    sortedJobs.forEach(job => {
+                    }).forEach(job => {
                         const popupDisplayMode = document.querySelector('input[name="displayMode"]:checked').value;
                         let originalName = popupDisplayMode === 'name' && mstData[job.job_id] ? mstData[job.job_id] : job.job_id;
                         const statusInfo = statusMap[job.status] || { key: 'schd', class: 'status-scheduled' };
@@ -371,77 +360,10 @@ export function init() {
                         pillElement.title = createTooltipContent(job, originalName);
                         pillElement.innerHTML = contentHtml;
 
-                        popupContent.appendChild(pillElement);
+                        popup.appendChild(pillElement);
                     });
 
-                    // 페이징 컨트롤 생성
-                    const pagination = document.createElement('div');
-                    pagination.className = 'pagination';
-                    
-                    // 페이지 정보
-                    const itemsPerPage = 50; // 최대 50개 표시
-                    const totalPages = Math.ceil(sortedJobs.length / itemsPerPage);
-                    let currentPage = 1;
-
-                    // 페이지 내용 업데이트 함수
-                    function updatePopupContent() {
-                        const startIndex = (currentPage - 1) * itemsPerPage;
-                        const endIndex = startIndex + itemsPerPage;
-                        
-                        // 모든 Job Pill 숨기기
-                        Array.from(popupContent.children).forEach((pill, index) => {
-                            pill.style.display = (index >= startIndex && index < endIndex) ? 'block' : 'none';
-                        });
-
-                        // 페이징 UI 업데이트
-                        updatePaginationUI();
-                    }
-
-                    // 페이징 UI 업데이트 함수
-                    function updatePaginationUI() {
-                        pagination.innerHTML = '';
-
-                        // 이전 페이지 버튼
-                        const prevBtn = document.createElement('button');
-                        prevBtn.textContent = '← 이전';
-                        prevBtn.disabled = currentPage === 1;
-                        prevBtn.addEventListener('click', () => {
-                            if (currentPage > 1) {
-                                currentPage--;
-                                updatePopupContent();
-                            }
-                        });
-                        pagination.appendChild(prevBtn);
-
-                        // 페이지 번호 표시
-                        const pageInfo = document.createElement('span');
-                        pageInfo.className = 'page-info';
-                        pageInfo.textContent = `${currentPage} / ${totalPages}`;
-                        pagination.appendChild(pageInfo);
-
-                        // 다음 페이지 버튼
-                        const nextBtn = document.createElement('button');
-                        nextBtn.textContent = '다음 →';
-                        nextBtn.disabled = currentPage === totalPages;
-                        nextBtn.addEventListener('click', () => {
-                            if (currentPage < totalPages) {
-                                currentPage++;
-                                updatePopupContent();
-                            }
-                        });
-                        pagination.appendChild(nextBtn);
-                    }
-
-                    // 팝업에 내용 추가
-                    popup.appendChild(popupContent);
-                    if (totalPages > 1) {
-                        popup.appendChild(pagination);
-                    }
-
                     document.body.appendChild(popup);
-
-                    // 초기 페이지 내용 표시
-                    updatePopupContent();
 
                         // --- Popup click logic ---
                         const togglePopup = (event) => {
@@ -597,13 +519,7 @@ export function init() {
         }
 
         try {
-            let url = `/api/collection_schedule?view=${viewType}`;
-            if (viewType === 'monthly') {
-                url += `&month_offset=${monthOffset}`;
-            } else {
-                url += `&week_offset=${weekOffset}`;
-            }
-            const response = await fetch(url);
+            const response = await fetch(`/api/collection_schedule?view=${viewType}`);
             if (!response.ok) {
                 if (response.status === 401) {
                     showToast('세션이 만료되었거나 로그인되지 않았습니다. 로그인 페이지로 이동합니다.', 'error');
@@ -649,9 +565,6 @@ export function init() {
             if (!weeklyBtn.classList.contains('active')) {
                 weeklyBtn.classList.add('active');
                 monthlyBtn.classList.remove('active');
-                // 탭 전환 시에는 항상 "이번 주"로 리셋
-                weekOffset = 0;
-                updateNavigationVisibility();
                 fetchData('weekly');
             }
         });
@@ -661,9 +574,6 @@ export function init() {
         if (!monthlyBtn.classList.contains('active')) {
             monthlyBtn.classList.add('active');
             if (weeklyBtn) weeklyBtn.classList.remove('active');
-            // 탭 전환 시에는 항상 "이번 달"로 리셋
-            monthOffset = 0;
-            updateNavigationVisibility();
             fetchData('monthly');
         }
     });
@@ -696,67 +606,6 @@ export function init() {
         }
     });
 
-    // 지난달/다음달 / 지난주/다음주 버튼 이벤트 리스너
-    const prevMonthBtn = document.getElementById('prev-month-btn');
-    const nextMonthBtn = document.getElementById('next-month-btn');
-    const monthNavigation = document.getElementById('month-navigation');
-    const prevWeekBtn = document.getElementById('prev-week-btn');
-    const nextWeekBtn = document.getElementById('next-week-btn');
-    const weekNavigation = document.getElementById('week-navigation');
-    
-    // 주간/월간 뷰에 따라 네비게이션 표시 제어
-    function updateNavigationVisibility() {
-        const isMonthlyView = monthlyBtn.classList.contains('active');
-        const isWeeklyView = weeklyBtn && weeklyBtn.classList.contains('active');
-
-        if (monthNavigation) {
-            monthNavigation.style.display = isMonthlyView ? 'inline-flex' : 'none';
-        }
-        if (weekNavigation) {
-            weekNavigation.style.display = isWeeklyView ? 'inline-flex' : 'none';
-        }
-    }
-    
-    if (prevMonthBtn) {
-        prevMonthBtn.addEventListener('click', () => {
-            monthOffset--;
-            fetchData('monthly');
-        });
-    }
-    
-    if (nextMonthBtn) {
-        nextMonthBtn.addEventListener('click', () => {
-            monthOffset++;
-            fetchData('monthly');
-        });
-    }
-
-    if (prevWeekBtn) {
-        prevWeekBtn.addEventListener('click', () => {
-            weekOffset--;
-            if (weeklyBtn && !weeklyBtn.classList.contains('active')) {
-                // 탭 상태가 꼬이지 않도록 보정
-                weeklyBtn.classList.add('active');
-                monthlyBtn.classList.remove('active');
-            }
-            fetchData('weekly');
-        });
-    }
-
-    if (nextWeekBtn) {
-        nextWeekBtn.addEventListener('click', () => {
-            weekOffset++;
-            if (weeklyBtn && !weeklyBtn.classList.contains('active')) {
-                weeklyBtn.classList.add('active');
-                monthlyBtn.classList.remove('active');
-            }
-            fetchData('weekly');
-        });
-    }
-    
-    // 초기 로드 시 버튼 visibility 설정
-    updateNavigationVisibility();
-    
     // 엑셀 템플릿 다운로드 버튼 이벤트 리스너
     const downloadExcelTemplateBtn = document.getElementById('downloadExcelTemplateBtn');
     if (downloadExcelTemplateBtn) {
@@ -767,8 +616,5 @@ export function init() {
     const urlParams = new URLSearchParams(window.location.search);
     const isGuest = urlParams.get('guest') === '1';
     const initialView = isGuest ? 'monthly' : 'weekly';
-    // 초기 뷰에 따라 오프셋 초기화
-    monthOffset = 0;
-    weekOffset = 0;
     fetchData(initialView);
 }

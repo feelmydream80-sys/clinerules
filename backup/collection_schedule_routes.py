@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, current_app, request, jsonify, ses
 from ..auth_routes import login_required, check_password_change_required, collection_schedule_required
 from .dashboard_routes import log_menu_access
 from msys.database import get_db_connection
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from typing import Optional, Dict
 import pytz
 from service.mngr_sett_service import MngrSettService
@@ -37,38 +37,16 @@ def api_collection_schedule():
 
     user = session.get('user')
     view_type = request.args.get('view', 'weekly')
-    month_offset = int(request.args.get('month_offset', 0))
-    week_offset = int(request.args.get('week_offset', 0))
-    current_app.logger.info(
-        f"view_type: {view_type}, month_offset: {month_offset}, week_offset: {week_offset}, "
-        f"user permissions: {user.get('permissions') if user else None}"
-    )
+    current_app.logger.info(f"view_type: {view_type}, user permissions: {user.get('permissions') if user else None}")
     
     today = datetime.now(pytz.timezone('Asia/Seoul')).date()
     
     if view_type == 'monthly':
-        # 기준 연/월에서 month_offset만큼 정확히 이동
-        year = today.year
-        month = today.month + month_offset
-        # 연도/월 보정
-        while month > 12:
-            month -= 12
-            year += 1
-        while month < 1:
-            month += 12
-            year -= 1
-
-        start_date = date(year, month, 1)
-        # 다음 달 1일 계산 후 하루 빼서 마지막 날 계산
-        next_month_year = year + (month // 12)
-        next_month_month = 1 if month == 12 else month + 1
-        next_month = date(next_month_year, next_month_month, 1)
+        start_date = today.replace(day=1)
+        next_month = (start_date.replace(day=28) + timedelta(days=4)).replace(day=1)
         end_date = next_month - timedelta(days=1)
-    else:  # weekly
-        # 이번 주 월요일 기준에서 week_offset 주 만큼 이동
+    else: # weekly
         start_date = today - timedelta(days=today.weekday())
-        if week_offset != 0:
-            start_date = start_date + timedelta(weeks=week_offset)
         end_date = start_date + timedelta(days=6)
         
     try:

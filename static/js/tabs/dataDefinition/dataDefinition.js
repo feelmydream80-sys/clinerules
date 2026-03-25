@@ -6,7 +6,6 @@ import { showToast, createModal, getAddGroupModalHTML, getEditGroupModalHTML, ge
 // 전역 상태
 let selectedGroup = null;
 let selectedRow = null;
-let isModalOpen = false;
 let isInitialized = false;
 let allData = null; // 전역 데이터 저장
 
@@ -32,7 +31,7 @@ export async function init() {
     isInitialized = true;
     selectedGroup = null;
     selectedRow = null;
-    isModalOpen = false;
+    window.isModalOpen = false;
     allData = null;
     
     // 기존 모달이 남아있다면 제거
@@ -290,18 +289,25 @@ function selectGroup(group) {
     }
 }
 
+// 페이징 상태 관리
+let currentPage = 1;
+let itemsPerPage = 10; // 페이지당 표시 수량 (기본값)
+const itemsPerPageOptions = [5, 10, 20, 50, 100]; // 표시 수량 옵션
+
 // 3. 그룹 상세 정보 로드 및 렌더링
 async function loadGroupDetails(groupCd) {
     console.log(`그룹 상세 정보 로드 시작: ${groupCd}`);
     
     // selectedRow 상태 초기화 (새 그룹을 선택하면 이전 선택된 행이 초기화됨)
     selectedRow = null;
+    currentPage = 1; // 페이지 초기화
     
     const detailPanel = document.getElementById('detailPanel');
     const selectedGroupTitle = document.getElementById('selectedGroupTitle');
     const detailTableBody = document.getElementById('detailTableBody');
 
-    selectedGroupTitle.textContent = `${selectedGroup.cd} - ${selectedGroup.cd_nm}`;
+    const totalItems = allData.filter(item => item.cd_cl === groupCd && item.cd !== groupCd).length;
+    selectedGroupTitle.textContent = `${selectedGroup.cd} - ${selectedGroup.cd_nm} (${totalItems} 건)`;
     detailTableBody.innerHTML = '';
 
     if (!allData) {
@@ -312,24 +318,33 @@ async function loadGroupDetails(groupCd) {
 
     updateDetailTableHeader();
 
-    if (groupDetails.length > 0) {
-        groupDetails
-            .sort((a, b) => a.cd.localeCompare(b.cd))
-            .forEach(item => {
-                const row = renderDetailRow(item);
-                detailTableBody.appendChild(row);
-            });
-    } else {
-        const emptyRow = document.createElement('tr');
-        emptyRow.innerHTML = '<td colspan="5" style="text-align: center; color: #94a3b8;">데이터가 없습니다.</td>';
-        detailTableBody.appendChild(emptyRow);
-    }
+    // 페이징된 데이터 렌더링
+    renderPagedDetails(groupDetails);
 
     detailPanel.style.display = 'block';
     
     const buttonContainer = document.getElementById('buttonContainer');
     if (buttonContainer) {
         buttonContainer.innerHTML = '';
+        
+        // 표시 수량 콤보박스
+        const itemsPerPageSelect = document.createElement('select');
+        itemsPerPageSelect.style.cssText = 'padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; margin-right: 15px;';
+        itemsPerPageOptions.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option;
+            optionElement.textContent = `${option} 건`;
+            if (option === itemsPerPage) {
+                optionElement.selected = true;
+            }
+            itemsPerPageSelect.appendChild(optionElement);
+        });
+        itemsPerPageSelect.addEventListener('change', (e) => {
+            itemsPerPage = parseInt(e.target.value);
+            currentPage = 1;
+            renderPagedDetails(groupDetails);
+            updatePagination(groupDetails);
+        });
         
         const activateBtn = document.createElement('button');
         activateBtn.id = 'activateBtn';
@@ -367,14 +382,143 @@ async function loadGroupDetails(groupCd) {
             }
         });
 
+        buttonContainer.appendChild(itemsPerPageSelect);
         buttonContainer.appendChild(activateBtn);
         buttonContainer.appendChild(deactivateBtn);
         buttonContainer.appendChild(addDetailBtn);
         buttonContainer.appendChild(editBtn);
     }
     
+    // 페이징 버튼 추가 (테이블 하단)
+    const detailTable = document.querySelector('#detailPanel table');
+    if (detailTable && groupDetails.length > itemsPerPage) {
+        // 기존 페이징 컨테이너가 있으면 제거
+        const existingPagination = document.getElementById('detailPagination');
+        if (existingPagination) {
+            existingPagination.remove();
+        }
+        
+        const paginationContainer = document.createElement('div');
+        paginationContainer.id = 'detailPagination';
+        paginationContainer.style.cssText = 'margin-top: 15px; display: flex; gap: 5px; justify-content: center;';
+        
+        const totalPages = Math.ceil(groupDetails.length / itemsPerPage);
+        
+        // 이전 페이지 버튼
+        const prevBtn = document.createElement('button');
+        prevBtn.textContent = '이전';
+        prevBtn.className = 'btn';
+        prevBtn.style.cssText = 'padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer;';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPagedDetails(groupDetails);
+                updatePagination(groupDetails);
+            }
+        });
+        
+        // 페이지 번호 버튼
+        const pageNumbersContainer = document.createElement('div');
+        pageNumbersContainer.style.cssText = 'display: flex; gap: 5px;';
+        
+        for (let i = 1; i <= totalPages; i++) {
+            const pageBtn = document.createElement('button');
+            pageBtn.textContent = i;
+            pageBtn.className = `btn ${i === currentPage ? 'btn-primary' : ''}`;
+            pageBtn.style.cssText = 'padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer;';
+            if (i === currentPage) {
+                pageBtn.style.backgroundColor = '#007bff';
+                pageBtn.style.color = 'white';
+                pageBtn.style.borderColor = '#007bff';
+            }
+            pageBtn.addEventListener('click', () => {
+                currentPage = i;
+                renderPagedDetails(groupDetails);
+                updatePagination(groupDetails);
+            });
+            pageNumbersContainer.appendChild(pageBtn);
+        }
+        
+        // 다음 페이지 버튼
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = '다음';
+        nextBtn.className = 'btn';
+        nextBtn.style.cssText = 'padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer;';
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderPagedDetails(groupDetails);
+                updatePagination(groupDetails);
+            }
+        });
+        
+        paginationContainer.appendChild(prevBtn);
+        paginationContainer.appendChild(pageNumbersContainer);
+        paginationContainer.appendChild(nextBtn);
+        detailTable.parentNode.appendChild(paginationContainer);
+    }
+    
     updateActionButtons();
     console.log(`그룹 상세 정보 로드 완료: ${groupCd}`);
+}
+
+// 페이징된 데이터 렌더링 함수
+function renderPagedDetails(groupDetails) {
+    const detailTableBody = document.getElementById('detailTableBody');
+    detailTableBody.innerHTML = '';
+    
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pagedData = groupDetails.slice(startIndex, endIndex);
+    
+    if (pagedData.length > 0) {
+        pagedData
+            .sort((a, b) => a.cd.localeCompare(b.cd))
+            .forEach(item => {
+                const row = renderDetailRow(item);
+                detailTableBody.appendChild(row);
+            });
+    } else {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = '<td colspan="5" style="text-align: center; color: #94a3b8;">데이터가 없습니다.</td>';
+        detailTableBody.appendChild(emptyRow);
+    }
+}
+
+// 페이징 버튼 업데이트 함수
+function updatePagination(groupDetails) {
+    const paginationContainer = document.getElementById('detailPagination');
+    if (!paginationContainer) {
+        return;
+    }
+    
+    const totalPages = Math.ceil(groupDetails.length / itemsPerPage);
+    const pageNumbersContainer = paginationContainer.querySelector('div:nth-child(2)');
+    
+    // 페이지 번호 버튼 업데이트
+    const pageButtons = pageNumbersContainer.querySelectorAll('button');
+    pageButtons.forEach((btn, index) => {
+        const pageNumber = index + 1;
+        if (pageNumber === currentPage) {
+            btn.className = 'btn btn-primary';
+            btn.style.backgroundColor = '#007bff';
+            btn.style.color = 'white';
+            btn.style.borderColor = '#007bff';
+        } else {
+            btn.className = 'btn';
+            btn.style.backgroundColor = 'white';
+            btn.style.color = 'black';
+            btn.style.borderColor = '#ddd';
+        }
+    });
+    
+    // 이전/다음 버튼 상태 업데이트
+    const prevBtn = paginationContainer.querySelector('button:first-child');
+    const nextBtn = paginationContainer.querySelector('button:last-child');
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages;
 }
 
 // 선택된 행 비활성화 함수
@@ -495,6 +639,15 @@ function renderDetailRow(item) {
         checkbox.checked = !checkbox.checked;
         
         selectDetailRow(row, item);
+    });
+    
+    // 더블 클릭 이벤트: 수정 모달 직접 열기
+    row.addEventListener('dblclick', (e) => {
+        if (e.target.tagName === 'INPUT' && e.target.type === 'checkbox') {
+            return;
+        }
+        
+        showEditModal(item);
     });
     
     row.innerHTML = `
@@ -632,12 +785,12 @@ function handleDeleteGroupClick() {
 
 // 9. 그룹 추가 모달 표시 (tb_con_mst 스키마 기반)
 async function showAddGroupModal() {
-    if (isModalOpen === true) {
+    if (window.isModalOpen === true) {
         console.log('모달이 이미 열려있습니다.');
         return;
     }
 
-    isModalOpen = true;
+    window.isModalOpen = true;
 
     if (!allData) {
         allData = await getGroups();
@@ -645,7 +798,7 @@ async function showAddGroupModal() {
 
     const { modal, modalContent, saveBtn } = createModal(getAddGroupModalHTML(), {
         title: '새 그룹 추가',
-        width: '800px',
+        width: '1800px',
         saveText: '추가',
         saveDisabled: true
     });
@@ -692,7 +845,7 @@ async function showAddGroupModal() {
                 try {
             await updateGroup(cd, updateData);
                     alert('그룹이 활성화되었습니다.');
-                    isModalOpen = false;
+                    window.isModalOpen = false;
                     document.body.removeChild(modal);
                     allData = await getGroups(); // 전역 데이터 재로드
                     await renderGroupCards();
@@ -725,7 +878,7 @@ async function showAddGroupModal() {
             try {
                 await createItem(newGroupData);
                 alert('새 그룹이 추가되었습니다.');
-                isModalOpen = false;
+                window.isModalOpen = false;
                 document.body.removeChild(modal);
                 allData = await getGroups(); // 전역 데이터 재로드
                 await renderGroupCards();
@@ -841,7 +994,7 @@ async function showEditGroupModal(group) {
         
         createModal(getEditGroupModalHTML(group, safeGroupHeader), {
             title: '그룹 수정',
-            width: '800px',
+            width: '1800px',
             onSave: async () => {
                 const cd_cl = document.getElementById('editGroupCdCl').value.trim();
                 const cd_nm = document.getElementById('editGroupNm').value.trim();
@@ -968,6 +1121,7 @@ async function showEditModal(item) {
         
         createModal(getDetailModalHTML(`${item.cd} - ${item.cd_nm} 수정`, item, groupItemFields), {
             title: `${item.cd} - ${item.cd_nm} 수정`,
+            width: '1800px',
             onSave: async () => {
                 const cd_nm = document.getElementById('editDetailNm').value.trim();
                 const cd_desc = document.getElementById('editDetailDesc').value.trim();
@@ -1034,6 +1188,7 @@ async function showAddDetailModal(group) {
         
         const { modal, modalContent, saveBtn } = createModal(getDetailModalHTML(`${group.cd} - ${group.cd_nm} 추가`, null, groupItemFields), {
             title: `${group.cd} - ${group.cd_nm} 추가`,
+            width: '1800px',
             saveText: '추가',
             saveDisabled: true
         });

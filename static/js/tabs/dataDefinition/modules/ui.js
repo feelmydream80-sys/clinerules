@@ -168,6 +168,35 @@ export function createModal(contentHTML, options = {}) {
         }
     });
 
+    // body에 전역 ESC 키 이벤트 리스너 추가 (포커스 문제 해결)
+    const handleEscKey = (e) => {
+        if (e.key === 'Escape') {
+            console.log('ESC 키 클릭');
+            if (onCancel) {
+                onCancel();
+            }
+            window.isModalOpen = false;
+            document.body.removeChild(modal);
+            document.removeEventListener('keydown', handleEscKey);
+        }
+    };
+    document.addEventListener('keydown', handleEscKey);
+
+    // 모달이 닫힐 때 이벤트 리스너 제거 (메모리 누수 방지)
+    const removeListeners = () => {
+        document.removeEventListener('keydown', handleEscKey);
+    };
+    cancelBtn.addEventListener('click', removeListeners);
+    saveBtn.addEventListener('click', removeListeners);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            console.log('모달 외부 클릭');
+            removeListeners();
+            window.isModalOpen = false;
+            document.body.removeChild(modal);
+        }
+    });
+
     return {
         modal,
         modalContent,
@@ -179,8 +208,8 @@ export function createModal(contentHTML, options = {}) {
 // 그룹 추가 모달 HTML
 export function getAddGroupModalHTML() {
     return `
-        <div style="max-height: 400px; overflow-y: auto;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div style="max-height: 600px; overflow-y: auto;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">그룹 코드 (cd_cl)</label>
                     <div style="position: relative; height: 40px;">
@@ -291,8 +320,8 @@ export function getEditGroupModalHTML(group, groupHeader) {
     };
     
     return `
-        <div style="max-height: 400px; overflow-y: auto;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div style="max-height: 600px; overflow-y: auto;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">그룹 코드 (cd_cl)</label>
                     <input type="text" id="editGroupCdCl" value="${formatValue(safeGroupHeader.cd_cl || group.cd)}" disabled
@@ -378,8 +407,8 @@ export function getEditGroupModalHTML(group, groupHeader) {
 // 상세 항목 추가/수정 모달 HTML
 export function getDetailModalHTML(title, item = null, groupItemFields = []) {
     let html = `
-        <div style="max-height: 400px; overflow-y: auto;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div style="max-height: 600px; overflow-y: auto;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #555;">데이터 코드</label>
                     ${!item ? `
