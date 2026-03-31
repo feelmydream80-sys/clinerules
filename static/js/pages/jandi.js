@@ -68,14 +68,20 @@ export function init() {
             // use_yn 필터 적용 후 100배수 데이터 필터링
             const activeJobs = filterValidJobs(filterActiveMstData(mstResult));
 
-            jobMstInfoMap = {};
-            activeJobs.forEach(job => {
-                jobMstInfoMap[job.job_id] = job;
-            });
+            // 데이터 분석 페이지의 방법을 참조: job_id 배열로 API 호출
+            const jobIds = activeJobs.map(job => job.job_id);
+            const jobMstInfoResponse = await fetch(`/api/job_mst_info?job_ids=${jobIds.join(',')}`);
+            if (!jobMstInfoResponse.ok) throw new Error('Job 상세정보 조회 실패');
+            const jobMstInfoResult = await jobMstInfoResponse.json();
+            
+            jobMstInfoMap = jobMstInfoResult;
+            
+            // 주기 정보가 있는 Job만 필터링 (데이터 분석 페이지와 정책 일관성 유지)
+            const jobsWithSchedule = activeJobs.filter(job => jobMstInfoMap[job.job_id]?.item6);
 
             // Fetch Jandi data for each job individually
             allJandiData = {};
-            for (const job of activeJobs) {
+            for (const job of jobsWithSchedule) {
                 const job_id = job.job_id;
                 const jandiDataResponse = await fetch(`/api/jandi-data?job_id=${job_id}&start_date=${startDate}&end_date=${endDate}&allData=${allData}`);
                 if (!jandiDataResponse.ok) {
@@ -99,11 +105,12 @@ export function init() {
                 allJandiData[job_id] = jobDataMap;
             }
 
-            allJobInfoData = activeJobs.map(job => ({
+            // Job Info 데이터 준비 - 데이터 분석 페이지와 동일한 매핑 방식
+            allJobInfoData = jobsWithSchedule.map(job => ({
                 job_id: job.job_id,
-                cd_nm: job.cd_nm,
-                cron: job.cron, // Use 'cron' from the new DAO response
-                description: job.description // Use 'description' from the new DAO response
+                cd_nm: jobMstInfoMap[job.job_id]?.cd_nm || '',
+                cron: jobMstInfoMap[job.job_id]?.item6 || '',
+                description: jobMstInfoMap[job.job_id]?.cd_desc || ''
             })).sort((a, b) => {
                 const numA = parseInt(a.job_id.replace('CD', ''), 10);
                 const numB = parseInt(b.job_id.replace('CD', ''), 10);
@@ -124,7 +131,8 @@ export function init() {
     function renderPagedHeatmaps(isNewSearch = false) {
         heatmapContainer.innerHTML = '';
 
-        let jobIds = Object.keys(jobMstInfoMap);
+        // 주기 정보가 있는 Job만 렌더링 (dataMap에 데이터가 있는 Job만)
+        let jobIds = Object.keys(allJandiData);
         if (searchTerm) {
             const lowerCaseSearchTerm = searchTerm.toLowerCase();
             jobIds = jobIds.filter(id => 

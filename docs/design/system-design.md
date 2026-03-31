@@ -12,8 +12,3 @@
 - Application Factory 패턴 (`create_app()`)
 - Blueprint로 모듈화 (routes, services, models 분리)
 - Layered 구조: routes → services → models/repositories
-
-## 3. Cline 작업 지침
-- 모든 새로운 기능은 **이 문서를 먼저 읽고** 기존 설계와 비교
-- 설계와 충돌하거나 모호한 요구사항이 있으면 반드시 `🔍 요구사항 검토 결과` 형식으로 의문 제기
-- SQLite는 개발/테스트용으로 사용. 프로덕션 DB 전환 시 database-design.md 업데이트 필수

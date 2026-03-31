@@ -13,6 +13,3 @@
 - 순환 의존성 금지
 - Configuration은 `config.py` 또는 환경 변수로 관리
 
-## 3. Cline 작업 지침
-- 새로운 Blueprint나 Route 추가 시 architecture.md와 일치하도록 구현
-- DB 접근은 반드시 database-design.md의 가이드라인 따를 것

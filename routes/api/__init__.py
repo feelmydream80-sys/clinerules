@@ -114,6 +114,8 @@ def get_mst_list_api():
                     'cd_nm': job.get('cd_nm', '-'),
                     'item2': job.get('item2', '-'),
                     'use_yn': job.get('use_yn', 'Y'),  # use_yn 필드 추가
+                    'item6': job.get('item6', ''),  # cron 필드 추가
+                    'cd_desc': job.get('cd_desc', '')  # 설명 필드 추가
                 })
             return jsonify(result), 200
     except Exception as e:

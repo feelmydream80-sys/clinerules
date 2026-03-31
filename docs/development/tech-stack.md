@@ -10,5 +10,3 @@
 - 패키지 관리: pip 또는 uv / requirements.txt
 - 테스트: pytest
 - 기타: python-dotenv, Flask-Login (필요 시), Werkzeug
-
-**Cline 지침**: 새로운 패키지 추가 시 반드시 이 파일에 기록하고 사용자 승인 후 진행
