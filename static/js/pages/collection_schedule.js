@@ -249,16 +249,44 @@ export function init() {
         
         let currentDate = new Date(startDate);
         while (currentDate <= endDate) {
-            const dateStr = currentDate.toISOString().split('T')[0];
-            const dayData = groupedData[dateStr] || [];
+            const currentDateStr = currentDate.toISOString().split('T')[0];
+            const dayData = groupedData[currentDateStr] || [];
             
             const dayColumn = document.createElement('div');
             dayColumn.className = 'day-column';
-            if (dateStr === today) dayColumn.classList.add('today');
+            if (currentDateStr === today) dayColumn.classList.add('today');
 
             const dayHeader = document.createElement('div');
             dayHeader.className = 'day-header';
-            dayHeader.textContent = `${String(currentDate.getMonth() + 1).padStart(2, '0')}/${String(currentDate.getDate()).padStart(2, '0')} (${['일', '월', '화', '수', '목', '금', '토'][currentDate.getDay()]})`;
+            const dateStr = `${String(currentDate.getMonth() + 1).padStart(2, '0')}/${String(currentDate.getDate()).padStart(2, '0')} (${['일', '월', '화', '수', '목', '금', '토'][currentDate.getDay()]})`;
+            
+            // 날짜별 상태 카운트 계산
+            const statusCounts = {
+                '성공': 0,
+                '실패': 0,
+                '미수집': 0,
+                '예정': 0
+            };
+            
+            dayData.forEach(job => {
+                if (statusCounts.hasOwnProperty(job.status)) {
+                    statusCounts[job.status]++;
+                } else if (job.status === '수집중') {
+                    // 수집중은 미수집으로 분류
+                    statusCounts['미수집']++;
+                }
+            });
+            
+            // 날짜 헤더에 카운트 표시 (작은 글씨)
+            dayHeader.innerHTML = `
+                <div>${dateStr}</div>
+                <div style="font-size: 10px; margin-top: 2px;">
+                    <span style="color: ${settingsManager.get('sucsTxtColr') || '#008000'}">성공: ${statusCounts['성공']}</span> / 
+                    <span style="color: ${settingsManager.get('failTxtColr') || '#ff0000'}">실패: ${statusCounts['실패']}</span> / 
+                    <span style="color: ${settingsManager.get('nodtTxtColr') || '#808080'}">미수집: ${statusCounts['미수집']}</span> / 
+                    <span style="color: ${settingsManager.get('schdTxtColr') || '#0000ff'}">예정: ${statusCounts['예정']}</span>
+                </div>
+            `;
             
             const jobsContainer = document.createElement('div');
             jobsContainer.className = 'jobs-container';
