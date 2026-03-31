@@ -9,6 +9,7 @@ from msys.column_mapper import convert_to_new_columns
 import json
 from datetime import datetime, timedelta
 import pytz
+from utils.datetime_utils import kst_to_utc, utc_to_kst
 
 class DashboardMapper:
     def __init__(self, conn):
@@ -53,18 +54,15 @@ class DashboardMapper:
         conditions = ["status IN ('CD901', 'CD902', 'CD903')"]
         params = []
 
-        kst = pytz.timezone('Asia/Seoul')
-        utc = pytz.utc
-
         if start_date:
-            start_dt_kst = kst.localize(datetime.strptime(start_date, '%Y-%m-%d'))
-            start_dt_utc = start_dt_kst.astimezone(utc)
+            start_dt_kst = datetime.strptime(start_date, '%Y-%m-%d')
+            start_dt_utc = kst_to_utc(start_dt_kst)
             conditions.append("start_dt >= %s")
             params.append(start_dt_utc)
 
         if end_date:
-            end_dt_kst = kst.localize(datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1, microseconds=-1))
-            end_dt_utc = end_dt_kst.astimezone(utc)
+            end_dt_kst = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1, microseconds=-1)
+            end_dt_utc = kst_to_utc(end_dt_kst)
             conditions.append("start_dt <= %s")
             params.append(end_dt_utc)
 
@@ -85,18 +83,15 @@ class DashboardMapper:
         conditions = ["status NOT IN ('CD901', 'CD904')"]
         params = []
 
-        kst = pytz.timezone('Asia/Seoul')
-        utc = pytz.utc
-
         if start_date:
-            start_dt_kst = kst.localize(datetime.strptime(start_date, '%Y-%m-%d'))
-            start_dt_utc = start_dt_kst.astimezone(utc)
+            start_dt_kst = datetime.strptime(start_date, '%Y-%m-%d')
+            start_dt_utc = kst_to_utc(start_dt_kst)
             conditions.append("start_dt >= %s")
             params.append(start_dt_utc)
 
         if end_date:
-            end_dt_kst = kst.localize(datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1, microseconds=-1))
-            end_dt_utc = end_dt_kst.astimezone(utc)
+            end_dt_kst = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1, microseconds=-1)
+            end_dt_utc = kst_to_utc(end_dt_kst)
             conditions.append("start_dt <= %s")
             params.append(end_dt_utc)
 

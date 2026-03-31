@@ -3,6 +3,45 @@ from typing import Optional, List, Dict, Any
 import pytz
 from flask import current_app
 
+def kst_to_utc(dt: datetime) -> datetime:
+    """KST datetime을 UTC로 변환합니다."""
+    kst = pytz.timezone('Asia/Seoul')
+    utc = pytz.utc
+    
+    if dt.tzinfo is None:
+        dt = kst.localize(dt)
+        
+    return dt.astimezone(utc)
+
+def utc_to_kst(dt: datetime) -> datetime:
+    """UTC datetime을 KST로 변환합니다."""
+    kst = pytz.timezone('Asia/Seoul')
+    utc = pytz.utc
+    
+    if dt.tzinfo is None:
+        dt = utc.localize(dt)
+        
+    return dt.astimezone(kst)
+
+def kst_str_to_utc(datetime_str: str, format: str = '%Y-%m-%d %H:%M:%S') -> datetime:
+    """KST 문자열을 UTC datetime으로 변환합니다."""
+    kst = pytz.timezone('Asia/Seoul')
+    utc = pytz.utc
+    
+    dt = datetime.strptime(datetime_str, format)
+    dt_kst = kst.localize(dt)
+    return dt_kst.astimezone(utc)
+
+def utc_str_to_kst_str(datetime_str: str, format: str = '%Y-%m-%d %H:%M:%S') -> str:
+    """UTC 문자열을 KST 문자열로 변환합니다."""
+    utc = pytz.utc
+    kst = pytz.timezone('Asia/Seoul')
+    
+    dt = datetime.strptime(datetime_str, format)
+    dt_utc = utc.localize(dt)
+    dt_kst = dt_utc.astimezone(kst)
+    return dt_kst.strftime(format)
+
 def is_within_schedule_grace_period(
     schedule_dt_aware: datetime,
     history_dt_utc: Optional[datetime],
@@ -18,13 +57,11 @@ def is_within_schedule_grace_period(
     if not history_dt_utc:
         return False
 
-    kst = pytz.timezone('Asia/Seoul')
-
     # history_dt가 timezone 정보가 없으면 UTC로 설정
     if history_dt_utc.tzinfo is None:
         history_dt_utc = pytz.utc.localize(history_dt_utc)
 
-    history_dt_kst = history_dt_utc.astimezone(kst)
+    history_dt_kst = utc_to_kst(history_dt_utc)
 
     # 시간 차이가 허용 범위 내에 있는지 확인
     time_diff = abs(schedule_dt_aware - history_dt_kst)
@@ -57,13 +94,7 @@ def utc_to_kst_str(dt: datetime) -> str:
     Returns:
         KST 시간대의 'YYYY-MM-DD HH:MM:SS' 형식 문자열
     """
-    kst = pytz.timezone('Asia/Seoul')
-    utc = pytz.utc
-
-    if dt.tzinfo is None:
-        dt = utc.localize(dt)
-
-    return dt.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')
+    return utc_to_kst(dt).strftime('%Y-%m-%d %H:%M:%S')
 
 def get_kst_now() -> datetime:
     """
@@ -88,15 +119,11 @@ def convert_datetime_fields_to_kst_str(data: Any) -> Any:
         변환된 데이터
     """
     import decimal
-    kst = pytz.timezone('Asia/Seoul')
-    utc = pytz.utc
 
     if isinstance(data, dict):
         for key, value in data.items():
             if isinstance(value, datetime):
-                if value.tzinfo is None:
-                    value = utc.localize(value)
-                data[key] = value.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')
+                data[key] = utc_to_kst_str(value)
             elif isinstance(value, decimal.Decimal):
                 data[key] = str(value)  # 정확도 보장을 위해 문자열로 변환
             elif value is None:

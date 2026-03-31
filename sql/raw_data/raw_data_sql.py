@@ -1,6 +1,7 @@
 from dao.sql_loader import load_sql
 from datetime import datetime, timedelta
 import pytz
+from utils.datetime_utils import kst_to_utc, get_kst_now
 
 class RawDataSQL:
     @staticmethod
@@ -13,28 +14,25 @@ class RawDataSQL:
         params = []
         conditions = []
 
-        kst = pytz.timezone('Asia/Seoul')
-        utc = pytz.utc
-
         if use_kst_today:
-            now_kst = datetime.now(kst)
+            now_kst = get_kst_now()
             start_of_day_kst = now_kst.replace(hour=0, minute=0, second=0, microsecond=0)
             end_of_day_kst = start_of_day_kst + timedelta(days=1, microseconds=-1)
             
-            start_of_day_utc = start_of_day_kst.astimezone(utc)
-            end_of_day_utc = end_of_day_kst.astimezone(utc)
+            start_of_day_utc = kst_to_utc(start_of_day_kst)
+            end_of_day_utc = kst_to_utc(end_of_day_kst)
             
             conditions.append("start_dt BETWEEN %s AND %s")
             params.extend([start_of_day_utc, end_of_day_utc])
         elif not all_data:
             if start_date:
-                start_dt_kst = kst.localize(datetime.strptime(start_date, '%Y-%m-%d'))
-                start_dt_utc = start_dt_kst.astimezone(utc)
+                start_dt_kst = datetime.strptime(start_date, '%Y-%m-%d')
+                start_dt_utc = kst_to_utc(start_dt_kst)
                 conditions.append("start_dt >= %s")
                 params.append(start_dt_utc)
             if end_date:
-                end_dt_kst = kst.localize(datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1, microseconds=-1))
-                end_dt_utc = end_dt_kst.astimezone(utc)
+                end_dt_kst = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1, microseconds=-1)
+                end_dt_utc = kst_to_utc(end_dt_kst)
                 conditions.append("start_dt <= %s")
                 params.append(end_dt_utc)
 

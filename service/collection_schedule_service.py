@@ -9,6 +9,7 @@ import pytz
 import re
 from typing import Optional, Dict, List
 from flask import current_app
+from utils.datetime_utils import utc_to_kst, get_kst_now
 
 
 class CollectionScheduleService:
@@ -46,7 +47,6 @@ class CollectionScheduleService:
     def _fetch_and_group_history_data(self, start_date, end_date, allowed_job_ids: Optional[List[str]], user: Optional[Dict]) -> Dict[str, List[Dict]]:
         """히스토리 데이터를 가져와서 날짜/Job ID별로 그룹화합니다."""
         dashboard_mapper = DashboardMapper(self.conn)
-        kst = pytz.timezone('Asia/Seoul')
 
         # 히스토리 데이터 조회
         history_data = dashboard_mapper.get_collection_history_for_schedule(start_date, end_date, allowed_job_ids)
@@ -59,7 +59,7 @@ class CollectionScheduleService:
                 start_dt_utc = hist['start_dt']
                 if start_dt_utc.tzinfo is None:
                     start_dt_utc = pytz.utc.localize(start_dt_utc)
-                start_dt_kst = start_dt_utc.astimezone(kst)
+                start_dt_kst = utc_to_kst(start_dt_utc)
 
                 date_key = start_dt_kst.strftime('%Y-%m-%d')
                 job_key = hist['job_id']
