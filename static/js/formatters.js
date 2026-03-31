@@ -19,7 +19,7 @@ function formatNumber(number, decimals = 0) {
 }
 
 /**
- * 날짜 포맷팅 함수
+ * 날짜 포맷팅 함수 (UTC → KST 변환 지원)
  * @param {string|Date} date - 포맷팅할 날짜
  * @param {string} format - 포맷 형식
  * @returns {string} - 포맷팅된 날짜 문자열
@@ -31,12 +31,15 @@ function formatDate(date, format = 'YYYY-MM-DD') {
         return 'Invalid Date';
     }
     
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    const seconds = String(d.getSeconds()).padStart(2, '0');
+    // UTC → KST 변환 (UTC+9)
+    d.setHours(d.getUTCHours() + 9);
+    
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const hours = String(d.getUTCHours()).padStart(2, '0');
+    const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(d.getUTCSeconds()).padStart(2, '0');
     
     return format
         .replace('YYYY', year)
