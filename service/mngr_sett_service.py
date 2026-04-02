@@ -309,7 +309,8 @@ class MngrSettService:
     def sync_settings_with_mst(self) -> Dict:
         """
         tb_con_mst의 모든 job을 tb_mngr_sett와 동기화합니다.
-        tb_mngr_sett에 존재하지 않는 job에 대해 기본 설정을 생성합니다.
+        tb_mngr_sett에 존재하지 않는 job에 대해 기본 설정을 생성하고,
+        TB_API_KEY_MNGR에 없는 CD 값도 추가합니다.
         """
         self.logger.info("=== Service: sync_settings_with_mst() 시작 ===")
         try:
@@ -352,13 +353,42 @@ class MngrSettService:
                 created_count += 1
                 self.logger.info(f"Service: Job ID {job_id}의 설정 생성 완료")
 
-            self.logger.info(f"=== Service: sync_settings_with_mst() 완료. 생성된 설정 개수: {created_count} ===")
+            # 6. TB_API_KEY_MNGR에 CD 값 추가 (API 키 관리 테이블에 없는 CD만 추가)
+            from service.api_key_mngr_service import ApiKeyMngrService
+            api_key_service = ApiKeyMngrService()
+            api_update_result = api_key_service.update_cd_from_mngr_sett()
+            
+            # 7. 이벤트 로그에 기록
+            from service.dashboard_service import DashboardService
+            dashboard_service = DashboardService(self.conn)
+            
+            # 기본 설정 생성 이벤트 로그
+            for job_id in jobs_to_create:
+                dashboard_service.save_event(
+                    con_id=None,
+                    job_id=job_id,
+                    status='SETTINGS_CREATED',
+                    rqs_info=f'관리자 설정>기본 설정 {job_id} 추가'
+                )
+            
+            # API 키 관리 업데이트 이벤트 로그
+            for cd in api_update_result['added_cds']:
+                dashboard_service.save_event(
+                    con_id=None,
+                    job_id=cd,
+                    status='API_KEY_UPDATED',
+                    rqs_info=f'API 키 관리 {cd} 추가'
+                )
+            
+            self.logger.info(f"=== Service: sync_settings_with_mst() 완료. 기본 설정 생성: {created_count}개, API 업데이트: {len(api_update_result['added_cds'])}개 ===")
             
             return {
                 'created_count': created_count,
+                'api_updated_count': len(api_update_result['added_cds']),
                 'total_mst_jobs': len(all_mst_job_ids),
                 'total_settings': len(existing_job_ids) + created_count,
-                'jobs_created': jobs_to_create
+                'jobs_created': jobs_to_create,
+                'api_updated_cds': api_update_result['added_cds']
             }
         except Exception as e:
             self.logger.error(f"Service: sync_settings_with_mst() 실패: {e}", exc_info=True)

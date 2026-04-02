@@ -17,53 +17,53 @@ class TestApiKeyMngrDao:
 
     @patch('dao.api_key_mngr_dao.get_db_connection')
     def test_select_all(self, mock_get_db):
-        """select_all 메서드 테스트"""
-        # 모의 데이터
+        """select_all 메소드 테스트"""
+        # 테스트 데이터 (CD, API_KEY, API_OWNR_EMAIL_ADDR, DUE, START_DT)
         mock_data = [
-            ('API-KEY-001', 1, '2025-01-15'),
-            ('API-KEY-002', 2, '2024-06-01')
+            ('API-KEY-001', 'test-api-key-1', 'test1@example.com', 1, '2025-01-15'),
+            ('API-KEY-002', 'test-api-key-2', 'test2@example.com', 2, '2024-06-01')
         ]
-        
+
         # Mock 설정
         mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = mock_data
-        mock_cursor.description = [('CD',), ('DUE',), ('START_DT',)]
-        
+        mock_cursor.description = [('CD',), ('API_KEY',), ('API_OWNR_EMAIL_ADDR',), ('DUE',), ('START_DT',)]
+
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
-        
+
         mock_get_db.return_value = mock_conn
-        
+
         # 테스트 실행
         dao = ApiKeyMngrDao()
         result = dao.select_all()
         
         assert len(result) == 2
-        assert result[0]['CD'] == 'API-KEY-001'
-        assert result[1]['DUE'] == 2
+        assert result[0]['cd'] == 'API-KEY-001'
+        assert result[1]['due'] == 2
 
     @patch('dao.api_key_mngr_dao.get_db_connection')
     def test_select_by_cd(self, mock_get_db):
-        """select_by_cd 메서드 테스트"""
-        # 모의 데이터
-        mock_data = ('API-KEY-001', 1, '2025-01-15')
-        
+        """select_by_cd 메소드 테스트"""
+        # 테스트 데이터 (CD, API_KEY, API_OWNR_EMAIL_ADDR, DUE, START_DT)
+        mock_data = ('API-KEY-001', 'test-api-key-1', 'test1@example.com', 1, '2025-01-15')
+
         # Mock 설정
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = mock_data
-        mock_cursor.description = [('CD',), ('DUE',), ('START_DT',)]
-        
+        mock_cursor.description = [('CD',), ('API_KEY',), ('API_OWNR_EMAIL_ADDR',), ('DUE',), ('START_DT',)]
+
         mock_conn = MagicMock()
         mock_conn.cursor.return_value = mock_cursor
-        
+
         mock_get_db.return_value = mock_conn
-        
+
         # 테스트 실행
         dao = ApiKeyMngrDao()
         result = dao.select_by_cd('API-KEY-001')
         
         assert result is not None
-        assert result['CD'] == 'API-KEY-001'
+        assert result['cd'] == 'API-KEY-001'
 
 
 class TestApiKeyMngrService:

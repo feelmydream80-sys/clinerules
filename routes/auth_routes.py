@@ -97,6 +97,15 @@ def mapping_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def api_key_mngr_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user_permissions = session.get('user', {}).get('permissions', [])
+        if 'api_key_mngr' not in user_permissions:
+            return render_template("unauthorized.html")
+        return f(*args, **kwargs)
+    return decorated_function
+
 def mngr_sett_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):

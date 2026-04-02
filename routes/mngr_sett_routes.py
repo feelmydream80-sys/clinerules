@@ -154,7 +154,8 @@ def export_mngr_sett():
 def sync_mngr_sett_with_mst():
     """
     tb_con_mst와 tb_mngr_sett를 동기화합니다.
-    tb_mngr_sett에 존재하지 않는 job에 대해 기본 설정을 생성합니다.
+    tb_mngr_sett에 존재하지 않는 job에 대해 기본 설정을 생성하고,
+    TB_API_KEY_MNGR에 없는 CD 값도 추가합니다.
     """
     logging.info("=== API: sync_mngr_sett_with_mst() 시작 ===")
     try:
@@ -163,9 +164,9 @@ def sync_mngr_sett_with_mst():
         result = mngr_sett_service.sync_settings_with_mst()
         conn.commit()
         
-        logging.info(f"=== API: sync_mngr_sett_with_mst() 완료. 생성된 설정 개수: {result['created_count']} ===")
+        logging.info(f"=== API: sync_mngr_sett_with_mst() 완료. 기본 설정 생성: {result['created_count']}개, API 업데이트: {result['api_updated_count']}개 ===")
         return jsonify({
-            "message": f"설정 동기화 완료. {result['created_count']}개의 새로운 설정이 생성되었습니다.",
+            "message": f"설정 동기화 완료. 기본 설정 {result['created_count']}개, API 업데이트 {result['api_updated_count']}개가 처리되었습니다.",
             "result": result
         }), 200
     except Exception as e:

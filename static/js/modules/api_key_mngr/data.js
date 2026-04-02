@@ -2,7 +2,7 @@
  * API 키 관리 페이지의 데이터 모듈
  */
 
-const apiKeyMngrData = {
+const ApiKeyMngrData = {
     // API 키 관리 데이터
     apiKeyMngrData: [],
 
@@ -71,14 +71,22 @@ const apiKeyMngrData = {
     },
 
     /**
-     * API 키 관리 데이터 업데이트
+     * 위험군 API 키 관리 데이터 반환 (1개월 이내 만료)
      */
-    updateApiKeyMngr: async function(cd, due, start_dt, api_ownr_email_addr) {
+    getRiskApiKeyMngrData: function() {
+        return this.apiKeyMngrData.filter(item => item.api_key && item.days_remaining > 0 && item.days_remaining <= 30);
+    },
+
+    /**
+     * API 키 관리 데이터 업데이트 (API 키 포함)
+     */
+    updateApiKeyMngr: async function(cd, due, start_dt, api_ownr_email_addr, api_key) {
         try {
             const response = await axios.put(`/api/api_key_mngr/${cd}`, {
                 due: due,
                 start_dt: start_dt,
-                api_ownr_email_addr: api_ownr_email_addr
+                api_ownr_email_addr: api_ownr_email_addr,
+                api_key: api_key
             });
             
             if (response.status === 200 && response.data.success) {
@@ -96,5 +104,3 @@ const apiKeyMngrData = {
         }
     }
 };
-
-export default apiKeyMngrData;

@@ -85,3 +85,35 @@ class ApiKeyMngrService:
         except Exception as e:
             self.logger.error(f"Error updating CD values: {e}")
             raise
+    
+    def update_api_key_mngr_with_api_key(self, cd, due, start_dt, api_ownr_email_addr, api_key):
+        """Update API key manager data including API key in TB_CON_MST"""
+        try:
+            conn = get_db_connection()
+            
+            # Update TB_API_KEY_MNGR
+            self.dao.update(cd, due, start_dt, api_ownr_email_addr, conn)
+            
+            # Update TB_CON_MST ITEM10 with API key
+            con_mst_dao = ConMstDAO(conn)
+            con_mst_data = con_mst_dao.get_mst_data_by_cd(cd)
+            
+            if con_mst_data:
+                # Update only ITEM10
+                update_data = {
+                    'item10': api_key
+                }
+                # Since cd_cl is required for update, we need to find it
+                # First, let's get all columns from con_mst_data to preserve existing values
+                full_update_data = {**con_mst_data, **update_data}
+                con_mst_dao.update_mst_data(con_mst_data['cd_cl'], cd, full_update_data)
+            
+            conn.commit()
+            self.logger.debug(f"Successfully updated API key manager and API key for CD: {cd}")
+            return True
+            
+        except Exception as e:
+            if 'conn' in locals():
+                conn.rollback()
+            self.logger.error(f"Error updating API key manager with API key: {e}")
+            raise

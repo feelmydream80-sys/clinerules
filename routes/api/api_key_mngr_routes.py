@@ -1,9 +1,13 @@
 from flask import Blueprint, request, jsonify
 from service.api_key_mngr_service import ApiKeyMngrService
+from ..auth_routes import login_required, check_password_change_required, api_key_mngr_required
 
 api_key_mngr_api = Blueprint('api_key_mngr_api', __name__, url_prefix='/api')
 
 @api_key_mngr_api.route('/api_key_mngr', methods=['GET'])
+@login_required
+@check_password_change_required
+@api_key_mngr_required
 def get_all_api_key_mngr():
     """모든 API 키 관리 정보 조회"""
     try:
@@ -20,6 +24,9 @@ def get_all_api_key_mngr():
         }), 500
 
 @api_key_mngr_api.route('/api_key_mngr/<cd>', methods=['GET'])
+@login_required
+@check_password_change_required
+@api_key_mngr_required
 def get_api_key_mngr_by_cd(cd):
     """CD로 API 키 관리 정보 조회"""
     try:
@@ -42,6 +49,9 @@ def get_api_key_mngr_by_cd(cd):
         }), 500
 
 @api_key_mngr_api.route('/api_key_mngr', methods=['POST'])
+@login_required
+@check_password_change_required
+@api_key_mngr_required
 def create_api_key_mngr():
     """API 키 관리 정보 생성"""
     try:
@@ -77,16 +87,20 @@ def create_api_key_mngr():
         }), 500
 
 @api_key_mngr_api.route('/api_key_mngr/<cd>', methods=['PUT'])
+@login_required
+@check_password_change_required
+@api_key_mngr_required
 def update_api_key_mngr(cd):
-    """API 키 관리 정보 업데이트"""
+    """API 키 관리 정보 업데이트 (TB_API_KEY_MNGR + TB_CON_MST ITEM10)"""
     try:
         data = request.json
         due = data.get('due')
         start_dt = data.get('start_dt')
         api_ownr_email_addr = data.get('api_ownr_email_addr')
+        api_key = data.get('api_key')
         
         service = ApiKeyMngrService()
-        result = service.update_api_key_mngr(cd, due, start_dt, api_ownr_email_addr)
+        result = service.update_api_key_mngr_with_api_key(cd, due, start_dt, api_ownr_email_addr, api_key)
         
         if result:
             return jsonify({
@@ -105,6 +119,9 @@ def update_api_key_mngr(cd):
         }), 500
 
 @api_key_mngr_api.route('/api_key_mngr/<cd>', methods=['DELETE'])
+@login_required
+@check_password_change_required
+@api_key_mngr_required
 def delete_api_key_mngr(cd):
     """API 키 관리 정보 삭제"""
     try:
@@ -128,6 +145,9 @@ def delete_api_key_mngr(cd):
         }), 500
 
 @api_key_mngr_api.route('/api_key_mngr/update_cds', methods=['POST'])
+@login_required
+@check_password_change_required
+@api_key_mngr_required
 def update_cd_from_mngr_sett():
     """TB_MNGR_SETT에서 CD 값을 가져와 TB_API_KEY_MNGR에 없는 CD를 추가"""
     try:
