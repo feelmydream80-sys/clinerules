@@ -348,7 +348,7 @@ window.ApiKeyMngrUI.setupGanttEventListeners = function() {
 // ==========================================
 
 /**
- * 페이지 로드 이벤트
+ * 페이지 로드 이벤트 (기존 함수 - 전체 데이터 로드, 수정 아님)
  */
 window.ApiKeyMngrUI.handlePageLoad = async function() {
     window.ApiKeyMngrUI.showLoading(true);
@@ -358,6 +358,30 @@ window.ApiKeyMngrUI.handlePageLoad = async function() {
             window.ApiKeyMngrUI.renderApiKeyMngrTable();
             window.ApiKeyMngrUI.renderAbnormalApiKeyMngrTable();
             window.ApiKeyMngrUI.renderApiKeyExpiryChart();
+        } else {
+            alert('API 키 관리 데이터 로드에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('API 키 관리 데이터 로드 오류:', error);
+        alert('API 키 관리 데이터 로드 중 오류가 발생했습니다.');
+    } finally {
+        window.ApiKeyMngrUI.hideLoading();
+    }
+};
+
+/**
+ * 페이지 로드 이벤트 (페이징 - 새 함수)
+ * 백엔드에서 페이징된 데이터만 가져와 서버 부하 감소
+ */
+window.ApiKeyMngrUI.handlePageLoadPaged = async function(page = 1, pageSize = 100) {
+    window.ApiKeyMngrUI.showLoading(true);
+    try {
+        const result = await ApiKeyMngrData.loadApiKeyMngrDataPaged(page, pageSize);
+        if (result.success) {
+            window.ApiKeyMngrUI.renderApiKeyMngrTable();
+            window.ApiKeyMngrUI.renderAbnormalApiKeyMngrTable();
+            window.ApiKeyMngrUI.renderApiKeyExpiryChart();
+            console.log(`페이징 데이터 로드 완료: ${result.data.length}건 (전체: ${result.pagination.total_count}건)`);
         } else {
             alert('API 키 관리 데이터 로드에 실패했습니다.');
         }
@@ -428,6 +452,30 @@ window.ApiKeyMngrUI.updateScheduleInfo = function(type) {
 };
 
 /**
+ * 검색 이벤트 설정 (백엔드 API 호출 - 새 함수)
+ */
+window.ApiKeyMngrUI.setupSearchEvent = function() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        let debounceTimer;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                window.ApiKeyMngrUI.handleSearchWithBackend();
+            }, 300);  // 300ms 디바운스
+        });
+        
+        // Enter 키 이벤트
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(debounceTimer);
+                window.ApiKeyMngrUI.handleSearchWithBackend();
+            }
+        });
+    }
+};
+
+/**
  * 페이지 초기화
  */
 window.ApiKeyMngrUI.init = function() {
@@ -451,4 +499,7 @@ window.ApiKeyMngrUI.init = function() {
 
     // 스케줄 정보 업데이트 이벤트 바인딩
     window.ApiKeyMngrUI.setupScheduleInfoUpdate();
+    
+    // 검색 이벤트 (백엔드 API 호출)
+    window.ApiKeyMngrUI.setupSearchEvent();
 };

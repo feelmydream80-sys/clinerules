@@ -161,6 +161,110 @@ class ApiKeyMngrService:
             self.logger.error(f"Error getting event logs: {e}")
             raise
 
+    def get_all_api_key_mngr_paged(self, page: int = 1, page_size: int = 10):
+        """
+        Get paginated API key manager records with expiry information (기존 함수 수정 아님 - 새 함수)
+        
+        :param page: 페이지 번호 (1부터 시작)
+        :param page_size: 페이지당 데이터 수
+        :return: dict with data, total_count, page, page_size, total_pages
+        """
+        try:
+            self.logger.info(f"[API키관리-서비스] get_all_api_key_mngr_paged 호출 - page: {page}, page_size: {page_size}")
+            
+            # 페이징된 데이터 조회
+            data = self.dao.select_all_paged(page, page_size)
+            
+            # 전체 카운트 조회
+            total_count = self.dao.count_all()
+            
+            # Convert dates and calculate expiry info
+            result = []
+            today = datetime.now().date()
+            
+            for item in data:
+                if isinstance(item['start_dt'], str):
+                    item['start_dt'] = datetime.strptime(item['start_dt'], '%Y-%m-%d').date()
+                
+                expiry_dt = datetime(item['start_dt'].year + item['due'], item['start_dt'].month, item['start_dt'].day).date() if item['start_dt'] else None
+                days_remaining = (expiry_dt - today).days if expiry_dt else 0
+                
+                item['start_dt'] = item['start_dt'].isoformat() if item['start_dt'] else None
+                item['expiry_dt'] = expiry_dt.isoformat() if expiry_dt else None
+                item['days_remaining'] = days_remaining
+                item['is_expiring_soon'] = days_remaining <= 30
+                
+                result.append(item)
+            
+            # Sort by start date (descending)
+            result.sort(key=lambda x: x['start_dt'], reverse=True)
+            
+            # 전체 페이지 수 계산
+            total_pages = (total_count + page_size - 1) // page_size if page_size > 0 else 1
+            
+            return {
+                'data': result,
+                'total_count': total_count,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': total_pages
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error getting paginated API key manager data: {e}")
+            raise
+
+    def get_all_api_key_mngr_paged_with_search(self, page: int = 1, page_size: int = 10, search_query: str = None):
+        """
+        Get paginated API key manager records with search (기존 함수 수정 아님 - 새 함수)
+        
+        :param page: 페이지 번호 (1부터 시작)
+        :param page_size: 페이지당 데이터 수
+        :param search_query: 검색어 (CD, 명칭, API 키에서 검색)
+        :return: dict with data, total_count, page, page_size, total_pages
+        """
+        try:
+            self.logger.info(f"[API키관리-서비스] get_all_api_key_mngr_paged_with_search 호출 - page: {page}, page_size: {page_size}, search: {search_query}")
+            
+            # 검색+페이징된 데이터 조회 (DAO에서 total_count도 반환)
+            data, total_count = self.dao.select_all_paged_with_search(page, page_size, search_query)
+            
+            # Convert dates and calculate expiry info
+            result = []
+            today = datetime.now().date()
+            
+            for item in data:
+                if isinstance(item['start_dt'], str):
+                    item['start_dt'] = datetime.strptime(item['start_dt'], '%Y-%m-%d').date()
+                
+                expiry_dt = datetime(item['start_dt'].year + item['due'], item['start_dt'].month, item['start_dt'].day).date() if item['start_dt'] else None
+                days_remaining = (expiry_dt - today).days if expiry_dt else 0
+                
+                item['start_dt'] = item['start_dt'].isoformat() if item['start_dt'] else None
+                item['expiry_dt'] = expiry_dt.isoformat() if expiry_dt else None
+                item['days_remaining'] = days_remaining
+                item['is_expiring_soon'] = days_remaining <= 30
+                
+                result.append(item)
+            
+            # Sort by start date (descending)
+            result.sort(key=lambda x: x['start_dt'], reverse=True)
+            
+            # 전체 페이지 수 계산
+            total_pages = (total_count + page_size - 1) // page_size if page_size > 0 else 1
+            
+            return {
+                'data': result,
+                'total_count': total_count,
+                'page': page,
+                'page_size': page_size,
+                'total_pages': total_pages
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error getting paginated API key manager data with search: {e}")
+            raise
+
     def send_expiry_notification(self, cds):
         """
         Send API key expiry notification emails for selected CDs

@@ -182,10 +182,13 @@ window.ApiKeyMngrUI.renderApiKeyMngrTable = function(data) {
     // 페이지네이션 설정
     const itemsPerPage = window.ApiKeyMngrUI.getPageSize();
     const currentPage = parseInt(localStorage.getItem('apiKeyMngrPage')) || 1;
-    const totalPages = Math.ceil(normalData.length / itemsPerPage);
+    const totalPages = Math.max(1, Math.ceil(normalData.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const paginatedData = normalData.slice(startIndex, endIndex);
+    
+    // 디버깅 로그
+    console.log('[페이징 디버그] normalData.length:', normalData.length, 'itemsPerPage:', itemsPerPage, 'totalPages:', totalPages, 'currentPage:', currentPage);
     
     // 테이블 렌더링
     tableBody.innerHTML = '';
@@ -465,7 +468,7 @@ window.ApiKeyMngrUI.renderRiskApiKeyMngrTable = async function() {
 // ==========================================
 
 /**
- * 검색 처리
+ * 검색 처리 (기존 함수 - 프론트엔드 필터링, 수정 아님)
  */
 window.ApiKeyMngrUI.handleSearch = function() {
     const currentActiveTab = document.querySelector('.api-tab-btn.active');
@@ -473,6 +476,41 @@ window.ApiKeyMngrUI.handleSearch = function() {
         window.ApiKeyMngrUI.renderApiKeyMngrTable();
     } else {
         window.ApiKeyMngrUI.renderAbnormalApiKeyMngrTable();
+    }
+};
+
+/**
+ * 검색 처리 (백엔드 API 호출 - 새 함수)
+ * 검색어를 백엔드로 전송하여 검색+페이징된 데이터 로드
+ */
+window.ApiKeyMngrUI.handleSearchWithBackend = async function() {
+    const searchInput = document.getElementById('searchInput');
+    const searchQuery = searchInput ? searchInput.value.trim() : '';
+    
+    // 페이지 초기화
+    localStorage.setItem('apiKeyMngrPage', '1');
+    localStorage.setItem('abnormalApiKeyMngrPage', '1');
+    
+    window.ApiKeyMngrUI.showLoading(true);
+    try {
+        // 검색+페이징 API 호출
+        const result = await ApiKeyMngrData.loadApiKeyMngrDataPagedWithSearch(1, 100, searchQuery);
+        
+        if (result.success) {
+            // 테이블 렌더링
+            window.ApiKeyMngrUI.renderApiKeyMngrTable();
+            window.ApiKeyMngrUI.renderAbnormalApiKeyMngrTable();
+            window.ApiKeyMngrUI.renderApiKeyExpiryChart();
+            
+            console.log(`검색 완료: "${searchQuery}" - ${result.data.length}건 (전체: ${result.pagination.total_count}건)`);
+        } else {
+            alert('검색에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('검색 오류:', error);
+        alert('검색 중 오류가 발생했습니다.');
+    } finally {
+        window.ApiKeyMngrUI.hideLoading();
     }
 };
 
@@ -647,17 +685,32 @@ window.ApiKeyMngrUI.renderPagination = function(container, currentPage, totalPag
     
     container.innerHTML = '';
     
+    // totalPages가 1 이하면 페이지네이션 표시 안 함
+    if (totalPages <= 1) {
+        if (totalPages === 1) {
+            const infoText = document.createElement('span');
+            infoText.className = 'text-sm text-gray-500';
+            infoText.textContent = '1 페이지';
+            container.appendChild(infoText);
+        }
+        console.log('[renderPagination] totalPages <= 1, container:', container.id, 'currentPage:', currentPage, 'totalPages:', totalPages);
+        return;
+    }
+    
+    console.log('[renderPagination] 다중 페이지 - container:', container.id, 'currentPage:', currentPage, 'totalPages:', totalPages);
+    
     // 이전 페이지 버튼
     const prevButton = document.createElement('button');
-    prevButton.className = 'px-3 py-1 rounded-lg text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition';
+    const prevDisabled = currentPage === 1;
+    prevButton.className = `px-3 py-1 rounded-lg text-sm font-medium transition ${prevDisabled ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'}`;
     prevButton.innerHTML = '이전';
-    prevButton.disabled = currentPage === 1;
-    prevButton.onclick = function() {
-        if (currentPage > 1) {
+    prevButton.disabled = prevDisabled;
+    if (!prevDisabled) {
+        prevButton.onclick = function() {
             localStorage.setItem(storageKey, currentPage - 1);
             renderFunction();
-        }
-    };
+        };
+    }
     container.appendChild(prevButton);
     
     // 페이지 번호 버튼
@@ -669,9 +722,29 @@ window.ApiKeyMngrUI.renderPagination = function(container, currentPage, totalPag
         startPage = Math.max(1, endPage - visiblePages + 1);
     }
     
+    // 첫 페이지로 가는 버튼 (필요시)
+    if (startPage > 1) {
+        const firstButton = document.createElement('button');
+        firstButton.className = 'px-3 py-1 rounded-lg text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition';
+        firstButton.textContent = '1';
+        firstButton.onclick = function() {
+            localStorage.setItem(storageKey, 1);
+            renderFunction();
+        };
+        container.appendChild(firstButton);
+        
+        if (startPage > 2) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'px-2 text-gray-400';
+            ellipsis.textContent = '...';
+            container.appendChild(ellipsis);
+        }
+    }
+    
     for (let i = startPage; i <= endPage; i++) {
         const pageButton = document.createElement('button');
-        pageButton.className = 'px-3 py-1 rounded-lg text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition';
+        const isActive = i === currentPage;
+        pageButton.className = `px-3 py-1 rounded-lg text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white font-bold' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'}`;
         pageButton.textContent = i;
         pageButton.onclick = function() {
             localStorage.setItem(storageKey, i);
@@ -680,18 +753,44 @@ window.ApiKeyMngrUI.renderPagination = function(container, currentPage, totalPag
         container.appendChild(pageButton);
     }
     
+    // 마지막 페이지로 가는 버튼 (필요시)
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'px-2 text-gray-400';
+            ellipsis.textContent = '...';
+            container.appendChild(ellipsis);
+        }
+        
+        const lastButton = document.createElement('button');
+        lastButton.className = 'px-3 py-1 rounded-lg text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition';
+        lastButton.textContent = totalPages;
+        lastButton.onclick = function() {
+            localStorage.setItem(storageKey, totalPages);
+            renderFunction();
+        };
+        container.appendChild(lastButton);
+    }
+    
     // 다음 페이지 버튼
     const nextButton = document.createElement('button');
-    nextButton.className = 'px-3 py-1 rounded-lg text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition';
+    const nextDisabled = currentPage === totalPages;
+    nextButton.className = `px-3 py-1 rounded-lg text-sm font-medium transition ${nextDisabled ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'}`;
     nextButton.innerHTML = '다음';
-    nextButton.disabled = currentPage === totalPages;
-    nextButton.onclick = function() {
-        if (currentPage < totalPages) {
+    nextButton.disabled = nextDisabled;
+    if (!nextDisabled) {
+        nextButton.onclick = function() {
             localStorage.setItem(storageKey, currentPage + 1);
             renderFunction();
-        }
-    };
+        };
+    }
     container.appendChild(nextButton);
+    
+    // 페이지 정보 표시
+    const pageInfo = document.createElement('span');
+    pageInfo.className = 'ml-3 text-sm text-gray-500';
+    pageInfo.textContent = `${currentPage} / ${totalPages} 페이지`;
+    container.appendChild(pageInfo);
 };
 
 // ==========================================

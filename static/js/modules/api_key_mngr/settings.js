@@ -26,8 +26,12 @@ window.ApiKeyMngrUI.syncSettings = async function() {
             }
             // 데이터 새로고침
             await ApiKeyMngrData.loadApiKeyMngrData();
-            if (typeof ApiKeyMngrUI.renderTable === 'function') {
-                ApiKeyMngrUI.renderTable();
+            // 정상/비정상 테이블 모두 렌더링
+            if (typeof ApiKeyMngrUI.renderApiKeyMngrTable === 'function') {
+                ApiKeyMngrUI.renderApiKeyMngrTable();
+            }
+            if (typeof ApiKeyMngrUI.renderAbnormalApiKeyMngrTable === 'function') {
+                ApiKeyMngrUI.renderAbnormalApiKeyMngrTable();
             }
         } else {
             if (typeof showToast === 'function') {
@@ -392,12 +396,26 @@ window.ApiKeyMngrUI.saveMailSettings = async function() {
             window.ApiKeyMngrUI.updatePreview('7');
             window.ApiKeyMngrUI.updatePreview('0');
             window.ApiKeyMngrUI.updateHistoryButtonStates();
+            
+            if (typeof showToast === 'function') {
+                showToast('메일 설정이 저장되었습니다.', 'success');
+            } else {
+                alert('메일 설정이 저장되었습니다.');
+            }
         } else {
-            alert('메일 설정 저장 실패: ' + (data.message || '알 수 없는 오류'));
+            if (typeof showToast === 'function') {
+                showToast('메일 설정 저장 실패: ' + (data.message || '알 수 없는 오류'), 'error');
+            } else {
+                alert('메일 설정 저장 실패: ' + (data.message || '알 수 없는 오류'));
+            }
         }
     } catch (error) {
         console.error('메일 설정 저장 오류:', error);
-        alert('메일 설정 저장 중 오류가 발생했습니다.');
+        if (typeof showToast === 'function') {
+            showToast('메일 설정 저장 중 오류가 발생했습니다.', 'error');
+        } else {
+            alert('메일 설정 저장 중 오류가 발생했습니다.');
+        }
     }
 };
 
@@ -482,14 +500,26 @@ window.ApiKeyMngrUI.saveScheduleSettings = async function() {
         const result = await ApiKeyMngrData.saveScheduleSettings(schedules);
         
         if (result) {
-            alert('스케줄 설정이 저장되었습니다.');
+            if (typeof showToast === 'function') {
+                showToast('스케줄 설정이 저장되었습니다.', 'success');
+            } else {
+                alert('스케줄 설정이 저장되었습니다.');
+            }
             window.ApiKeyMngrUI.loadScheduleSettings();
         } else {
-            alert('스케줄 설정 저장에 실패했습니다.');
+            if (typeof showToast === 'function') {
+                showToast('스케줄 설정 저장에 실패했습니다.', 'error');
+            } else {
+                alert('스케줄 설정 저장에 실패했습니다.');
+            }
         }
     } catch (error) {
         console.error('스케줄 설정 저장 오류:', error);
-        alert('스케줄 설정 저장 중 오류가 발생했습니다.');
+        if (typeof showToast === 'function') {
+            showToast('스케줄 설정 저장 중 오류가 발생했습니다.', 'error');
+        } else {
+            alert('스케줄 설정 저장 중 오류가 발생했습니다.');
+        }
     }
 };
 

@@ -779,6 +779,12 @@ async function loadPageData(options = {}) {
     const state = window._mngrSettState || {};
     const { page = 1, perPage = state.settingsItemsPerPage || 10, searchTerm = null } = options;
     
+    // 중복 호출 방지: 이미 실행 중이면 스킵
+    if (loadPageDataDebounceTimer) {
+        console.log('=== loadPageData() already running, skipping ===');
+        return;
+    }
+    
     console.log('=== loadPageData() called ===', options);
     const container = document.getElementById('mngr_sett_page');
     if (!container) {
@@ -787,6 +793,9 @@ async function loadPageData(options = {}) {
     }
     const loadingOverlay = container.querySelector('#adminLoadingOverlay');
     if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+    
+    // 디바운스 타이머 설정 (동시 호출 방지)
+    loadPageDataDebounceTimer = true;
 
     try {
         // 개별적으로 API 호출하여 하나의 실패가 전체를 망가뜨리지 않도록 함
@@ -863,21 +872,20 @@ async function loadPageData(options = {}) {
         showToast('페이지 초기화 중 치명적 오류 발생: ' + error.message, 'error');
     } finally {
         if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        // 타이머 리셋 (약간의 지연 후)
+        setTimeout(() => {
+            loadPageDataDebounceTimer = null;
+        }, 100);
     }
 }
 
 // 전역으로 loadPageData 함수 노출
 window.loadPageData = loadPageData;
 
-let initializePageHasRun = false;
+// 중복 호출 방지를 위한 디바운스 타이머
+let loadPageDataDebounceTimer = null;
 
 async function initializePage() {
-    if (initializePageHasRun) {
-        console.log('=== INITIALIZE PAGE ALREADY RUN ===');
-        return;
-    }
-    initializePageHasRun = true;
-    
     console.log('=== INITIALIZE PAGE CALLED ==='); // 디버그 로그 추가
     const container = document.getElementById('mngr_sett_page');
     if (!container) {
@@ -1048,9 +1056,7 @@ export async function init() {
         console.error('Container not found: mngr_sett_page');
         return;
     }
-
-    // 페이지 이동 시마다 초기화 플래그 리셋 (F5는 router.js의 isInitialPageLoaded가 처리)
-    initializePageHasRun = false;
+    
     await initializePage();
 }
 

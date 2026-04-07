@@ -56,9 +56,6 @@ class ApiKeyMngrDao:
         except Exception as e:
             self.logger.error(f"Error selecting all API key manager data: {e}")
             raise
-        finally:
-            if 'conn' in locals():
-                conn.close()
 
     def select_by_cd(self, cd: str) -> Dict[str, Any]:
         """Select a record from TB_API_KEY_MNGR by CD"""
@@ -96,9 +93,6 @@ class ApiKeyMngrDao:
         except Exception as e:
             self.logger.error(f"Error selecting API key manager data by CD {cd}: {e}")
             raise
-        finally:
-            if 'conn' in locals():
-                conn.close()
 
     def insert(self, cd: str, due: int, start_dt: str, api_ownr_email_addr: str = None, conn=None) -> bool:
         """Insert a new record into TB_API_KEY_MNGR"""
@@ -110,10 +104,10 @@ class ApiKeyMngrDao:
             query = """
                 INSERT INTO TB_API_KEY_MNGR (CD, DUE, START_DT, API_OWNR_EMAIL_ADDR)
                 VALUES (%s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    DUE = VALUES(DUE),
-                    START_DT = VALUES(START_DT),
-                    API_OWNR_EMAIL_ADDR = VALUES(API_OWNR_EMAIL_ADDR)
+                ON CONFLICT (CD) DO UPDATE SET
+                    DUE = EXCLUDED.DUE,
+                    START_DT = EXCLUDED.START_DT,
+                    API_OWNR_EMAIL_ADDR = EXCLUDED.API_OWNR_EMAIL_ADDR
             """
             
             cursor.execute(query, (cd, due, start_dt, api_ownr_email_addr))
@@ -127,9 +121,6 @@ class ApiKeyMngrDao:
                 conn.rollback()
             self.logger.error(f"Error inserting API key manager record: {e}")
             raise
-        finally:
-            if conn is None and 'conn' in locals():
-                conn.close()
 
     def update(self, cd: str, due: int, start_dt: str, api_ownr_email_addr: str = None, conn=None) -> bool:
         """Update an existing record in TB_API_KEY_MNGR"""
@@ -157,9 +148,6 @@ class ApiKeyMngrDao:
                 conn.rollback()
             self.logger.error(f"Error updating API key manager record: {e}")
             raise
-        finally:
-            if conn is None and 'conn' in locals():
-                conn.close()
 
     def delete(self, cd: str) -> bool:
         """Delete a record from TB_API_KEY_MNGR"""
@@ -177,9 +165,6 @@ class ApiKeyMngrDao:
         except Exception as e:
             self.logger.error(f"Error deleting API key manager record: {e}")
             raise
-        finally:
-            if 'conn' in locals():
-                conn.close()
 
     def select_mail_settings(self) -> Dict[str, Any]:
         """Select all active mail settings from TB_API_KEY_MNGR_MAIL_SETT"""
@@ -209,9 +194,6 @@ class ApiKeyMngrDao:
         except Exception as e:
             self.logger.error(f"Error selecting mail settings: {e}")
             raise
-        finally:
-            if 'conn' in locals():
-                conn.close()
 
     def upsert_mail_settings(self, mail_tp: str, subject: str, from_email: str, body: str) -> bool:
         """Insert new mail setting and deactivate old ones in TB_API_KEY_MNGR_MAIL_SETT"""
@@ -242,9 +224,6 @@ class ApiKeyMngrDao:
                 conn.rollback()
             self.logger.error(f"Error upserting mail settings: {e}")
             raise
-        finally:
-            if 'conn' in locals():
-                conn.close()
 
     def select_event_logs(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Select event logs from tb_con_hist_evnt_log"""
@@ -305,9 +284,6 @@ class ApiKeyMngrDao:
         except Exception as e:
             self.logger.error(f"Error selecting event logs: {e}")
             raise
-        finally:
-            if 'conn' in locals():
-                conn.close()
 
     def insert_event_log(self, cd: str, to_email: str, success: bool, error_msg: str = None) -> bool:
         """Insert event log into tb_con_hist_evnt_log"""
@@ -339,9 +315,6 @@ class ApiKeyMngrDao:
                 conn.rollback()
             self.logger.error(f"Error inserting event log: {e}")
             raise
-        finally:
-            if 'conn' in locals():
-                conn.close()
 
     # ==========================================
     # 메일 전송 이력 관련 메서드 (신규 추가)
@@ -369,9 +342,6 @@ class ApiKeyMngrDao:
         except Exception as e:
             self.logger.error(f"Error getting mail send log for CD {cd}: {e}")
             raise
-        finally:
-            if 'conn' in locals():
-                conn.close()
 
     def insert_mail_send_log(self, cd: str, mail_tp: str, sent_dt, success: bool, error_msg: str = None) -> bool:
         """메일 발송 이력 기록"""
@@ -395,9 +365,6 @@ class ApiKeyMngrDao:
                 conn.rollback()
             self.logger.error(f"Error inserting mail send log: {e}")
             raise
-        finally:
-            if 'conn' in locals():
-                conn.close()
 
     def select_mail_send_logs(self, page_size: int = 50, offset: int = 0, 
                                cd: str = None, mail_tp: str = None, success: bool = None) -> List[Dict[str, Any]]:
@@ -522,9 +489,6 @@ class ApiKeyMngrDao:
         except Exception as e:
             self.logger.error(f"Error selecting schedule settings: {e}")
             raise
-        finally:
-            if 'conn' in locals():
-                conn.close()
 
     def upsert_schedule_settings(self, schedules: List[Dict[str, Any]]) -> bool:
         """스케줄 설정 저장/수정 (3개 스케줄 일괄 처리)"""
@@ -561,9 +525,6 @@ class ApiKeyMngrDao:
                 conn.rollback()
             self.logger.error(f"Error upserting schedule settings: {e}")
             raise
-        finally:
-            if 'conn' in locals():
-                conn.close()
 
     def update_schedule_last_run(self, schd_tp: str, result: str) -> bool:
         """스케줄 마지막 실행 정보 업데이트"""
@@ -590,9 +551,6 @@ class ApiKeyMngrDao:
                 conn.rollback()
             self.logger.error(f"Error updating schedule last run: {e}")
             raise
-        finally:
-            if 'conn' in locals():
-                conn.close()
 
     def select_cds_not_in_api_key_mngr(self, conn=None) -> List[Dict[str, Any]]:
         """Select all CD values from TB_MNGR_SETT that are not in TB_API_KEY_MNGR"""
@@ -626,13 +584,6 @@ class ApiKeyMngrDao:
         except Exception as e:
             self.logger.error(f"Error selecting CD values not in API key manager: {e}")
             raise
-        finally:
-            # Only close connection if we created it
-            if conn is None and 'local_conn' in locals():
-                try:
-                    local_conn.close()
-                except:
-                    pass
         
         return data
 
@@ -674,9 +625,137 @@ class ApiKeyMngrDao:
         except Exception as e:
             self.logger.error(f"Error getting mail setting history for {mail_tp} version {version}: {e}")
             raise
-        finally:
-            if conn:
-                conn.close()
+
+    def select_all_paged(self, page: int = 1, page_size: int = 10) -> List[Dict[str, Any]]:
+        """Select all active records with pagination (기존 select_all 수정 아님 - 새 함수)"""
+        try:
+            self.logger.info(f"[API키관리-DAO] select_all_paged 호출 - page: {page}, page_size: {page_size}")
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            offset = (page - 1) * page_size
+            
+            query = """
+                SELECT 
+                    a.cd,
+                    b.ITEM10 as api_key,
+                    b.cd_nm,
+                    a.api_ownr_email_addr,
+                    a.due,
+                    a.start_dt,
+                    b.USE_YN as use_yn
+                FROM TB_API_KEY_MNGR a
+                LEFT JOIN TB_CON_MST b ON a.cd = b.CD AND b.USE_YN = 'Y'
+                ORDER BY a.cd
+                LIMIT %s OFFSET %s
+            """
+            
+            self.logger.info(f"[API키관리-DAO] SQL 실행 (페이징): LIMIT {page_size} OFFSET {offset}")
+            cursor.execute(query, (page_size, offset))
+            rows = cursor.fetchall()
+            
+            # Convert to list of dictionaries
+            data = []
+            for row in rows:
+                data.append({
+                    'cd': row[0],
+                    'api_key': row[1],
+                    'cd_nm': row[2],
+                    'api_ownr_email_addr': row[3],
+                    'due': row[4],
+                    'start_dt': row[5],
+                    'use_yn': row[6]
+                })
+            
+            self.logger.debug(f"Fetched {len(data)} records (page {page}) from TB_API_KEY_MNGR")
+            return data
+            
+        except Exception as e:
+            self.logger.error(f"Error selecting paged API key manager data: {e}")
+            raise
+
+    def count_all(self) -> int:
+        """Count total records in TB_API_KEY_MNGR (새 함수)"""
+        try:
+            self.logger.info("[API키관리-DAO] count_all 호출")
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            query = "SELECT COUNT(*) FROM TB_API_KEY_MNGR"
+            cursor.execute(query)
+            count = cursor.fetchone()[0]
+            
+            self.logger.debug(f"Total count: {count}")
+            return count
+            
+        except Exception as e:
+            self.logger.error(f"Error counting API key manager data: {e}")
+            raise
+
+    def select_all_paged_with_search(self, page: int = 1, page_size: int = 10, search_query: str = None) -> List[Dict[str, Any]]:
+        """Select all with pagination and search (LIKE 검색, 새 함수)"""
+        try:
+            self.logger.info(f"[API키관리-DAO] select_all_paged_with_search 호출 - page: {page}, page_size: {page_size}, search: {search_query}")
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            offset = (page - 1) * page_size
+            
+            base_query = """
+                FROM TB_API_KEY_MNGR a
+                LEFT JOIN TB_CON_MST b ON a.cd = b.CD AND b.USE_YN = 'Y'
+            """
+            
+            where_clause = ""
+            params = []
+            
+            if search_query:
+                where_clause = "WHERE a.cd ILIKE %s OR b.cd_nm ILIKE %s OR b.ITEM10 ILIKE %s"
+                search_pattern = f"%{search_query}%"
+                params = [search_pattern, search_pattern, search_pattern]
+            
+            count_query = f"SELECT COUNT(*) {base_query} {where_clause}"
+            cursor.execute(count_query, params)
+            total_count = cursor.fetchone()[0]
+            
+            select_query = f"""
+                SELECT 
+                    a.cd,
+                    b.ITEM10 as api_key,
+                    b.cd_nm,
+                    a.api_ownr_email_addr,
+                    a.due,
+                    a.start_dt,
+                    b.USE_YN as use_yn
+                {base_query}
+                {where_clause}
+                ORDER BY a.cd
+                LIMIT %s OFFSET %s
+            """
+            
+            query_params = params + [page_size, offset]
+            self.logger.info(f"[API키관리-DAO] SQL 실행 (검색+페이징): search={search_query}, LIMIT {page_size} OFFSET {offset}")
+            cursor.execute(select_query, query_params)
+            rows = cursor.fetchall()
+            
+            data = []
+            for row in rows:
+                data.append({
+                    'cd': row[0],
+                    'api_key': row[1],
+                    'cd_nm': row[2],
+                    'api_ownr_email_addr': row[3],
+                    'due': row[4],
+                    'start_dt': row[5],
+                    'use_yn': row[6]
+                })
+            
+            self.logger.debug(f"Fetched {len(data)} records (page {page}, search: {search_query}) from TB_API_KEY_MNGR")
+            return data, total_count
+            
+        except Exception as e:
+            self.logger.error(f"Error selecting paged API key manager data with search: {e}")
+            raise
 
     def count_mail_setting_history(self, mail_tp):
         """
@@ -703,6 +782,3 @@ class ApiKeyMngrDao:
         except Exception as e:
             self.logger.error(f"Error counting mail setting history for {mail_tp}: {e}")
             raise
-        finally:
-            if conn:
-                conn.close()

@@ -372,3 +372,10 @@ window.ApiKeyMngrUI.hideTip = function() {
 window.ApiKeyMngrUI.renderApiKeyExpiryChart = function() {
     window.ApiKeyMngrUI.renderGanttChart();
 };
+
+// ==========================================
+// 전역 함수 별칭 (HTML 인라인 이벤트 호환성)
+// ==========================================
+window.showTip = window.ApiKeyMngrUI.showTip;
+window.hideTip = window.ApiKeyMngrUI.hideTip;
+window.moveTip = window.ApiKeyMngrUI.moveTip;

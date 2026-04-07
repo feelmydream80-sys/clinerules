@@ -44,6 +44,79 @@ window.ApiKeyMngrData = {
     },
 
     /**
+     * API 키 관리 데이터 로드 (페이징 - 새 함수)
+     * @param {number} page - 페이지 번호 (1부터 시작)
+     * @param {number} pageSize - 페이지당 데이터 수
+     * @returns {object} { success, data, pagination }
+     */
+    loadApiKeyMngrDataPaged: async function(page = 1, pageSize = 10) {
+        try {
+            const params = new URLSearchParams({
+                page: page,
+                page_size: pageSize
+            });
+            const data = await apiFetch(`/api/api_key_mngr/paged?${params}`);
+            
+            if (data.success) {
+                this.apiKeyMngrData = data.data;
+                console.log('API 키 관리 데이터 로드 성공 (페이징):', {
+                    data: data.data.length,
+                    pagination: data.pagination
+                });
+                return {
+                    success: true,
+                    data: data.data,
+                    pagination: data.pagination
+                };
+            } else {
+                console.error('API 키 관리 데이터 로드 실패:', data.message);
+                return { success: false, data: [], pagination: {} };
+            }
+        } catch (error) {
+            console.error('API 키 관리 데이터 로드 오류:', error);
+            return { success: false, data: [], pagination: {} };
+        }
+    },
+
+    /**
+     * API 키 관리 데이터 로드 (검색+페이징 - 새 함수)
+     * @param {number} page - 페이지 번호 (1부터 시작)
+     * @param {number} pageSize - 페이지당 데이터 수
+     * @param {string} searchQuery - 검색어
+     * @returns {object} { success, data, pagination }
+     */
+    loadApiKeyMngrDataPagedWithSearch: async function(page = 1, pageSize = 10, searchQuery = '') {
+        try {
+            const params = new URLSearchParams({
+                page: page,
+                page_size: pageSize,
+                search: searchQuery
+            });
+            const data = await apiFetch(`/api/api_key_mngr/paged?${params}`);
+            
+            if (data.success) {
+                this.apiKeyMngrData = data.data;
+                console.log('API 키 관리 데이터 로드 성공 (검색+페이징):', {
+                    data: data.data.length,
+                    pagination: data.pagination,
+                    search: searchQuery
+                });
+                return {
+                    success: true,
+                    data: data.data,
+                    pagination: data.pagination
+                };
+            } else {
+                console.error('API 키 관리 데이터 로드 실패:', data.message);
+                return { success: false, data: [], pagination: {} };
+            }
+        } catch (error) {
+            console.error('API 키 관리 데이터 로드 오류:', error);
+            return { success: false, data: [], pagination: {} };
+        }
+    },
+
+    /**
      * CD 업데이트 (TB_MNGR_SETT → TB_API_KEY_MNGR)
      */
     updateCdFromMngrSett: async function() {
@@ -76,10 +149,10 @@ window.ApiKeyMngrData = {
 
     /**
      * 정상 상태의 API 키 관리 데이터 반환
-     * - api_key 값이 있으면 만료일 관계없이 정상으로 분류
+     * - 모든 데이터를 반환 (필터링은 getFilteredApiKeyMngrData에서 처리)
      */
     getNormalApiKeyMngrData: function() {
-        return this.apiKeyMngrData.filter(item => item.api_key);
+        return this.apiKeyMngrData;
     },
 
     /**

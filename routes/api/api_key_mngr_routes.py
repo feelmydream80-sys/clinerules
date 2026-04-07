@@ -13,7 +13,7 @@ api_key_mngr_api = Blueprint('api_key_mngr_api', __name__, url_prefix='/api')
 @check_password_change_required
 @api_key_mngr_required
 def get_all_api_key_mngr():
-    """모든 API 키 관리 정보 조회"""
+    """모든 API 키 관리 정보 조회 (기존 엔드포인트 - 전체 데이터, 수정 아님)"""
     try:
         logger.info("[API키관리] API 요청 수신 - /api/api_key_mngr")
         service = ApiKeyMngrService()
@@ -25,6 +25,46 @@ def get_all_api_key_mngr():
         })
         logger.info(f"[API키관리] 응답 전송 - status: 200, 데이터 크기: {len(str(data))} bytes")
         return response, 200
+    except Exception as e:
+        logger.error(f"[API키관리] 예외 발생: {type(e).__name__}: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@api_key_mngr_api.route('/api_key_mngr/paged', methods=['GET'])
+@login_required
+@check_password_change_required
+@api_key_mngr_required
+def get_all_api_key_mngr_paged():
+    """페이징된 API 키 관리 정보 조회 (새 엔드포인트, 검색 지원)"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        page_size = request.args.get('page_size', 10, type=int)
+        search = request.args.get('search', None)  # 검색어 파라미터
+        
+        logger.info(f"[API키관리] API 요청 수신 - /api/api_key_mngr/paged - page: {page}, page_size: {page_size}, search: {search}")
+        service = ApiKeyMngrService()
+        
+        # 검색어가 있으면 검색+페이징, 없으면 일반 페이징
+        if search:
+            result = service.get_all_api_key_mngr_paged_with_search(page, page_size, search)
+        else:
+            result = service.get_all_api_key_mngr_paged(page, page_size)
+        
+        logger.info(f"[API키관리] 서비스 응답 - 데이터 건수: {len(result['data'])}, 전체: {result['total_count']}")
+        
+        return jsonify({
+            'success': True,
+            'data': result['data'],
+            'pagination': {
+                'page': result['page'],
+                'page_size': result['page_size'],
+                'total_count': result['total_count'],
+                'total_pages': result['total_pages']
+            }
+        }), 200
     except Exception as e:
         logger.error(f"[API키관리] 예외 발생: {type(e).__name__}: {e}", exc_info=True)
         return jsonify({
