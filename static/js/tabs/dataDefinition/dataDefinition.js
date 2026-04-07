@@ -8,6 +8,7 @@ let selectedGroup = null;
 let selectedRow = null;
 let isInitialized = false;
 let allData = null; // 전역 데이터 저장
+let detailSortState = { column: 'cd', direction: 'asc' }; // 상세 테이블 정렬 상태
 
 // 디바운스 함수 (반복 요청 방지)
 function debounce(func, delay) {
@@ -464,22 +465,45 @@ async function loadGroupDetails(groupCd) {
     console.log(`그룹 상세 정보 로드 완료: ${groupCd}`);
 }
 
-// 페이징된 데이터 렌더링 함수
+// 페이징된 데이터 렌더링 함수 (정렬 상태 적용)
 function renderPagedDetails(groupDetails) {
     const detailTableBody = document.getElementById('detailTableBody');
     detailTableBody.innerHTML = '';
     
+    // 정렬 적용
+    const sortedData = [...groupDetails].sort((a, b) => {
+        const { column, direction } = detailSortState;
+        let valA = a[column];
+        let valB = b[column];
+        
+        // null/undefined 처리
+        if (valA === null || valA === undefined) valA = '';
+        if (valB === null || valB === undefined) valB = '';
+        
+        // 날짜 필드 (update_dt)
+        if (column === 'update_dt') {
+            const dateA = new Date(valA);
+            const dateB = new Date(valB);
+            return direction === 'asc' ? dateA - dateB : dateB - dateA;
+        }
+        
+        // 문자열 비교
+        const strA = String(valA).toLowerCase();
+        const strB = String(valB).toLowerCase();
+        if (strA < strB) return direction === 'asc' ? -1 : 1;
+        if (strA > strB) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const pagedData = groupDetails.slice(startIndex, endIndex);
+    const pagedData = sortedData.slice(startIndex, endIndex);
     
     if (pagedData.length > 0) {
-        pagedData
-            .sort((a, b) => a.cd.localeCompare(b.cd))
-            .forEach(item => {
-                const row = renderDetailRow(item);
-                detailTableBody.appendChild(row);
-            });
+        pagedData.forEach(item => {
+            const row = renderDetailRow(item);
+            detailTableBody.appendChild(row);
+        });
     } else {
         const emptyRow = document.createElement('tr');
         emptyRow.innerHTML = '<td colspan="5" style="text-align: center; color: #94a3b8;">데이터가 없습니다.</td>';
@@ -552,7 +576,7 @@ async function deactivateSelectedItems() {
     }
 }
 
-// 상세 테이블 헤더 업데이트 함수 (체크박스 열 추가)
+// 상세 테이블 헤더 업데이트 함수 (체크박스 열 추가 + 정렬 가능)
 function updateDetailTableHeader() {
     const detailTable = document.querySelector('#detailPanel table');
     const thead = detailTable.querySelector('thead');
@@ -571,11 +595,48 @@ function updateDetailTableHeader() {
     
     DEFAULT_COLUMNS.forEach(col => {
         const th = document.createElement('th');
-        th.textContent = col.label;
+        th.style.cursor = 'pointer';
+        th.style.userSelect = 'none';
+        th.style.transition = 'background-color 0.2s';
+        th.addEventListener('click', () => handleDetailSort(col.key));
+        
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = col.label;
+        th.appendChild(labelSpan);
+        
+        const sortIcon = document.createElement('span');
+        sortIcon.style.marginLeft = '4px';
+        sortIcon.style.fontSize = '12px';
+        sortIcon.style.color = '#94a3b8';
+        
+        if (detailSortState.column === col.key) {
+            sortIcon.textContent = detailSortState.direction === 'asc' ? '↑' : '↓';
+            sortIcon.style.color = '#007bff';
+            th.style.backgroundColor = '#e6f7ee';
+        } else {
+            sortIcon.textContent = '↕';
+        }
+        
+        th.appendChild(sortIcon);
         headerRow.appendChild(th);
     });
     
     thead.appendChild(headerRow);
+}
+
+// 상세 테이블 정렬 처리 함수
+function handleDetailSort(column) {
+    if (detailSortState.column === column) {
+        detailSortState.direction = detailSortState.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        detailSortState.column = column;
+        detailSortState.direction = 'asc';
+    }
+    
+    // 현재 그룹 데이터 다시 렌더링
+    if (selectedGroup) {
+        loadGroupDetails(selectedGroup.cd);
+    }
 }
 
 // 전체 체크박스 토글 함수
