@@ -161,7 +161,8 @@ def update_cd_from_mngr_sett():
     """TB_MNGR_SETT에서 CD 값을 가져와 TB_API_KEY_MNGR에 없는 CD를 추가"""
     try:
         service = ApiKeyMngrService()
-        added_count = service.update_cd_from_mngr_sett()
+        result = service.update_cd_from_mngr_sett()
+        added_count = len(result.get('added_cds', []))
         
         return jsonify({
             'success': True,

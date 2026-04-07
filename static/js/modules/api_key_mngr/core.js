@@ -260,7 +260,7 @@ window.ApiKeyMngrUI.setupPageSizeSelect = function() {
 };
 
 /**
- * CD 업데이트 버튼 이벤트
+ * CD 업데이트 버튼 이벤트 (공통 API 사용 - 관리자 설정과 동일한 sync API)
  */
 window.ApiKeyMngrUI.setupUpdateCdButton = function() {
     const updateCdButton = document.getElementById('update-cd-button');
@@ -268,16 +268,33 @@ window.ApiKeyMngrUI.setupUpdateCdButton = function() {
         updateCdButton.addEventListener('click', async () => {
             window.ApiKeyMngrUI.showLoading(true);
             try {
-                const result = await ApiKeyMngrData.updateCdFromMngrSett();
-                if (result) {
-                    window.ApiKeyMngrUI.showSuccessMessage(`성공적으로 ${result.added_count}개의 CD 값을 추가했습니다.`);
-                    // 데이터 다시 로드
-                    await window.ApiKeyMngrUI.handlePageLoad();
-                } else {
-                    window.ApiKeyMngrUI.showErrorMessage('CD 업데이트에 실패했습니다.');
+                // 관리자 설정과 동일한 공통 sync API 호출
+                const response = await fetch('/api/mngr_sett/settings/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                
+                const result = await response.json();
+                
+                if (typeof showToast === 'function') {
+                    showToast(result.message, 'success');
+                } else {
+                    alert(result.message);
+                }
+                
+                // 데이터 다시 로드
+                await window.ApiKeyMngrUI.handlePageLoad();
             } catch (error) {
-                window.ApiKeyMngrUI.showErrorMessage('CD 업데이트 중 오류가 발생했습니다.');
+                console.error('설정 동기화 오류:', error);
+                if (typeof showToast === 'function') {
+                    showToast('설정 동기화 실패: ' + error.message, 'error');
+                } else {
+                    alert('설정 동기화 중 오류가 발생했습니다.');
+                }
             } finally {
                 window.ApiKeyMngrUI.hideLoading();
             }

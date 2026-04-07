@@ -104,3 +104,6 @@ function initializeFlashedMessages() {
 // DOM 로드 후 flash 메시지 표시 함수 실행
 document.addEventListener('DOMContentLoaded', initializeFlashedMessages);
 
+// 전역에서 접근 가능하도록 window에 할당
+window.showToast = showToast;
+

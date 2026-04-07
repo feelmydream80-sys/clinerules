@@ -13,28 +13,36 @@ window.ApiKeyMngrUI = window.ApiKeyMngrUI || {};
  * 설정 동기화 (TB_MNGR_SETT → TB_API_KEY_MNGR CD 업데이트)
  */
 window.ApiKeyMngrUI.syncSettings = async function() {
-    if (!confirm('TB_MNGR_SETT에서 CD 값을 가져와 TB_API_KEY_MNGR을 동기화하시겠습니까?')) {
-        return;
-    }
-
     window.ApiKeyMngrUI.showLoading(true);
     try {
         const result = await ApiKeyMngrData.updateCdFromMngrSett();
         
         if (result.success) {
             const addedCount = result.added_count || 0;
-            alert(`설정 동기화 완료\n\n추가된 CD: ${addedCount}개`);
+            if (typeof showToast === 'function') {
+                showToast(`설정 동기화 완료: ${addedCount}개의 CD가 추가되었습니다.`, 'success');
+            } else {
+                alert(`설정 동기화 완료: ${addedCount}개의 CD가 추가되었습니다.`);
+            }
             // 데이터 새로고침
             await ApiKeyMngrData.loadApiKeyMngrData();
             if (typeof ApiKeyMngrUI.renderTable === 'function') {
                 ApiKeyMngrUI.renderTable();
             }
         } else {
-            alert(`설정 동기화 실패: ${result.message || '알 수 없는 오류'}`);
+            if (typeof showToast === 'function') {
+                showToast(`설정 동기화 실패: ${result.message || '알 수 없는 오류'}`, 'error');
+            } else {
+                alert(`설정 동기화 실패: ${result.message || '알 수 없는 오류'}`);
+            }
         }
     } catch (error) {
         console.error('설정 동기화 오류:', error);
-        alert('설정 동기화 중 오류가 발생했습니다.');
+        if (typeof showToast === 'function') {
+            showToast('설정 동기화 중 오류가 발생했습니다.', 'error');
+        } else {
+            alert('설정 동기화 중 오류가 발생했습니다.');
+        }
     } finally {
         window.ApiKeyMngrUI.hideLoading();
     }
