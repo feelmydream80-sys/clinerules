@@ -7,11 +7,28 @@
 - 개발자(Cline 포함)와 기획자 간 화면 이해를 공유
 - 화면 구현 시 일반적인 구조와 사용자 경험 유지
 
-## 2. 화면 정의 템플릿 (새로운 화면 추가 시 반드시 이 형식 사용)
+## 2. 실제 화면 파일 매핑
 
-### 화면 이름: [예: 대시보드 / 사용자 목록 / 게시글 작성]
+| 화면 이름 | URL | 실제 파일 경로 |
+|-----------|-----|----------------|
+| 감정 분석 (메인) | `/` | `web/templates/index.html` |
+| 워드클라우드 | `/wordcloud` | `web/templates/wordcloud.html` |
+| 메타데이터 | `/metadata` | `web/templates/metadata.html` |
+| 배치 처리 | `/metadata/batch` | `web/templates/metadata_batch.html` |
+| 데이터 전처리 | `/preprocess` | `web/templates/preprocess.html` |
+| 결과 보기 | `/results` | `web/templates/results.html` |
+| 반어법 분석 | `/sarcasm` | `web/templates/sarcasm.html` |
+| 불용어 관리 | `/stopwords` | `web/templates/stopwords.html` |
+| 설정 | `/settings` | `web/templates/settings.html` |
+| 베이스 템플릿 | - | `web/templates/base.html` |
 
-**URL**: `/dashboard` 또는 `/users`
+## 3. 화면 정의 템플릿 (새로운 화면 추가 시 반드시 이 형식 사용)
+
+### 화면 이름: [화면 이름]
+
+**URL**: [예: /dashboard 또는 /users]
+
+**실제 파일**: `web/templates/[파일명].html`
 
 **주요 도메인/목적**:
 - 이 화면에서 해결하고자 하는 비즈니스 요구사항은 무엇인가?
@@ -32,17 +49,40 @@
 - 에러 상태
 - 성공 상태
 
-**사용자 역할별 권한**:
-- 일반 사용자 vs 관리자 등
-
 **관련 API 엔드포인트**:
-- GET /api/users
-- POST /api/users 등
+- GET /api/xxx
+- POST /api/xxx 등
 
-**링크 및 네비게이션**:
-- 이 화면에서 이동 가능한 다른 화면 목록
+**관련 서비스**:
+- src/services/xxx_service.py
+- src/routes/xxx_routes.py
 
-**Cline 작업 지침**:
-- 새로운 화면을 구현할 때는 **반드시 이 문서를 먼저 읽고** 기존 screen-domain.md와 일치하는지 확인
-- 화면 구현 후 이 파일에 해당 화면 정의를 업데이트하거나 추가
-- UI와 백엔드 데이터 흐름이 불일치하면 즉시 🔍 요구사항 검토 결과 형식으로 의문 제기
+---
+
+## 시나리오 테스트
+
+### 시나리오: 분석 페이지 워드클라우드 옵션 문제
+
+**상황**: 사용자가 분석 시작 누르면 워드클라우드가 안 생김
+
+**분석 경로**:
+1. 00-core.md → "기능 문제 분석/디버깅" → 03.workflow.md
+2. 이 문서(screen-domain.md)에서 분석 페이지 파일 확인: `web/templates/index.html`
+3. 관련 API 분석: `src/routes/api_routes.py`
+4. 관련 서비스: `src/services/wordcloud_service.py`, `src/modules/wordcloud_generator.py`
+5. batch_processor.py와 비교하여 옵션 누락 확인
+
+**결과**: ✅ 정확한 파일 경로로 문제 분석 가능
+
+---
+
+### 시나리오: 배치 처리 페이지 디자인 변경
+
+**상황**: 배치 처리 페이지 디자인 개선 요청
+
+**분석 경로**:
+1. 00-core.md → "공통 UI/디자인" → 04.design-change.md
+2. 이 문서에서 배치 페이지 파일 확인: `web/templates/metadata_batch.html`
+3. 현재 디자인 분석 후 변경 계획
+
+**결과**: ✅ 실제 파일 경로로 정확한 안내 가능
