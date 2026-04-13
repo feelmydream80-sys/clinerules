@@ -1202,6 +1202,8 @@ export function init() {
             const date = e.target.dataset.date;
             const depth = parseInt(e.target.dataset.depth);
 
+            console.log('[DEBUG] 메모 팝업 열림 - grpId:', grpId, 'date:', date, 'depth:', depth);
+
             memoGrpId.value = grpId;
             memoDate.value = date;
             memoDepth.value = depth;
@@ -1213,6 +1215,7 @@ export function init() {
                 const response = await fetch(`/api/group-memo?grp_id=${grpId}&depth=${depth}&memo_date=${date}`);
                 const result = await response.json();
                 loadedMemo = result.memo;
+                console.log('[DEBUG] 메모 로드 완료 - loadedMemo:', loadedMemo);
             } catch (err) {
                 console.error('메모 로드 오류:', err);
             }
@@ -1278,6 +1281,23 @@ export function init() {
 
             if (memoPopup) {
                 memoPopup.classList.remove('hidden');
+                
+                // 디버그: 팝업 크기 로그
+                const container = memoPopup.querySelector('div[class*="bg-white"]');
+                if (container) {
+                    const rect = container.getBoundingClientRect();
+                    console.log('[DEBUG] 메모 팝업 크기 - 너비:', rect.width, 'px, 높이:', rect.height, 'px');
+                    console.log('[DEBUG] 윈도우 크기 - 너비:', window.innerWidth, 'px, 높이:', window.innerHeight, 'px');
+                    
+                    // textarea 크기 로그
+                    const textarea = document.getElementById('memo-content');
+                    if (textarea) {
+                        const taRect = textarea.getBoundingClientRect();
+                        console.log('[DEBUG] Textarea 크기 - 너비:', taRect.width, 'px, 높이:', taRect.height, 'px');
+                        console.log('[DEBUG] Textarea class:', textarea.className);
+                        console.log('[DEBUG] Textarea style.height:', textarea.style.height || '(없음 - CSS 적용)');
+                    }
+                }
             }
         }
     });
