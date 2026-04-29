@@ -1,40 +1,35 @@
-# Data Spec Routes (data_spec_routes.py)
+# data_spec_routes
 
-## 파일 위치
+**문서 위치**: `.clinerules/docs/msys/routes/data-spec-routes.md`
 
-`routes/data_spec_routes.py` (159줄)
+## 파일
+- `D:\dev\msys\routes\data_spec_routes.py` (159줄)
 
 ## 역할
+데이터 명세서 관리 - CRUD, URL 스크래핑
 
-데이터 사양 - DataTables 기반 데이터 관리
+## Blueprint
+```python
+bp = Blueprint('data_spec', __name__, url_prefix='/')
+```
 
-## 주요 엔드포인트
+## 엔드포인트
 
-| 엔드포인트 | 메서드 | 템플릿 | 기능 |
-|------------|--------|--------|------|
-| `/data/spec` | GET | data_spec.html | 데이터 사양 페이지 |
+| 경로 | 메서드 | 함수 | 설명 |
+|------|--------|------|------|
+| `/data_spec` | GET | `data_spec_page()` | 명세서 페이지 |
+| `/api/data-spec` | GET, POST | `handle_data_specs()` | 목록 조회/생성 |
+| `/api/scrape-spec` | POST | `scrape_spec_from_url()` | URL 스크래핑 |
+| `/api/data-spec/check-name` | GET | `check_data_spec_name()` | 이름 중복 확인 |
+| `/api/data-spec/<id>` | GET, PUT, DELETE | `handle_data_spec_by_id()` | 상세/수정/삭제 |
 
-### REST API
-
-| 엔드포인트 | 메서드 | 기능 |
-|------------|--------|------|
-| `/api/data/spec/list` | GET | 데이터 사양 목록 조회 |
-| `/api/data/spec/save` | POST | 데이터 사양 저장 |
-| `/api/data/spec/<id>` | PUT | 데이터 사양 수정 |
-| `/api/data/spec/<id>` | DELETE | 데이터 사양 삭제 |
-
-## 권한
-
-- `login_required` - 로그인 필수
-- `data_spec_required` - data_spec 권한
+## 데코레이터
+- `@log_menu_access`: 메뉴 접근 로그 기록
 
 ## 의존성
+- Service: `service/data_spec_service.py`
+- DAO: `dao/analytics_dao.py`
 
-- `service/data_spec_service.py` - 데이터 사양 서비스
-- `dao/analytics_dao.py` - 분석 DAO
-
-## 관련 문서
-
-- [routes/README.md](README.md) - routes 개요
-- [services/data-spec-service.md](../services/data-spec-service.md) - 데이터 사양 서비스
-- [templates/screen-domain.md](../templates/screen-domain.md) - 화면-템플릿 매핑
+## 연관 문서
+- [../services/data-spec-service.md](../services/data-spec-service.md)
+- [../templates/data_spec.md](../templates/data_spec.md)

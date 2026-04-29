@@ -1,33 +1,42 @@
-# Jandi Routes (jandi_routes.py)
+# jandi_routes
 
-## 파일 위치
+**문서 위치**: `.clinerules/docs/msys/routes/jandi-routes.md`
 
-`routes/jandi_routes.py` (92줄)
+## 파일
+- `D:\dev\msys\routes\jandi_routes.py` (92줄)
 
 ## 역할
+잔디 모니터링 - Job ID 목록, 마스터 상세정보, 히트맵 데이터
 
-지정 데이터 (Jandi) - Job ID 목록, 마스터 상세정보 조회
+## Blueprint
+```python
+bp = Blueprint('jandi', __name__, url_prefix='/')
+```
 
-## 주요 엔드포인트
+## 엔드포인트
 
-| 엔드포인트 | 메서드 | 템플릿 | 기능 |
-|------------|--------|--------|------|
-| `/jandi` | GET | jandi.html | 지정 데이터 페이지 |
+| 경로 | 메서드 | 함수 | 설명 |
+|------|--------|------|------|
+| `/jandi` | GET | `jandi_page()` | 잔디 페이지 |
+| `/api/job-list` | GET | `get_job_list()` | Job ID 목록 (DataTables) |
+| `/api/job_mst_info` | GET | `get_job_mst_info()` | 마스터 상세정보 |
+| `/api/jandi-data` | GET | `get_jandi_data()` | 잔디 히트맵 데이터 |
+| `/api/jandi/raw_data` | GET | `get_jandi_data()` | 원시 데이터 |
 
-### REST API
-
-| 엔드포인트 | 메서드 | 기능 |
-|------------|--------|------|
-| `/api/job-list` | GET | Job ID 목록 조회 (DataTables) |
-| `/api/job_mst_info` | GET | 마스터 상세정보 조회 |
+## 파라미터
+| 파라미터 | 타입 | 설명 |
+|----------|------|------|
+| start | int | DataTables 시작 위치 |
+| length | int | DataTables 페이지 크기 |
+| search[value] | string | 검색어 |
+| start_date | string | 시작 날짜 |
+| end_date | string | 종료 날짜 |
+| allData | boolean | 전체 데이터 조회 |
+| job_id | string | Job ID |
 
 ## 의존성
+- Service: `service/mst_service.py`, `service/jandi_service.py`
 
-- `service/mst_service.py` - 마스터 서비스
-- `service/jandi_service.py` - 지정 데이터 서비스
-
-## 관련 문서
-
-- [routes/README.md](README.md) - routes 개요
-- [services/jandi-service.md](../services/jandi-service.md) - 지정 데이터 서비스
-- [templates/screen-domain.md](../templates/screen-domain.md) - 화면-템플릿 매핑
+## 연관 문서
+- [../services/jandi-service.md](../services/jandi-service.md)
+- [../templates/jandi.md](../templates/jandi.md)

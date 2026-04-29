@@ -1,40 +1,44 @@
-# Analysis API (analysis_api.py)
+# api/analysis_api
 
-## 파일 위치
+**문서 위치**: `.clinerules/docs/msys/routes/api-analysis.md`
 
-`routes/api/analysis_api.py` (360줄)
+## 파일
+- `D:\dev\msys\routes\api\analysis_api.py` (371줄)
 
 ## 역할
+데이터 분석 REST API
 
-분석 REST API - 성공률 추이, 수집 이력, 상태 코드 등
+## Blueprint
+```python
+analysis_api_bp = Blueprint('analysis_api', __name__, url_prefix='/api/analytics')
+```
 
-## 주요 엔드포인트
+## 엔드포인트
 
-| 엔드포인트 | 메서드 | 기능 |
-|------------|--------|------|
-| `/api/analytics/success_rate_trend` | GET | 성공률 추이 |
-| `/api/analytics/collection_history` | GET | 수집 이력 |
-| `/api/analytics/status_codes` | GET | 상태 코드 조회 |
-| `/api/analytics/job_summary` | GET | Job 요약 데이터 |
-| `/api/analytics/heatmap` | GET | 히트맵 데이터 |
+| 경로 | 메서드 | 함수 | 설명 |
+|------|--------|------|------|
+| `/api/analytics/success_rate_trend` | GET | `get_analytics_success_rate_trend_api()` | 기간별 성공률 추이 |
+| `/api/analytics/trouble_by_code` | GET | `get_analytics_trouble_by_code_api()` | 장애 코드별 비율 |
+| `/api/analytics/summary` | GET | `api_analysis_summary()` | 분석 요약 |
+| `/api/analytics/trend` | GET | `api_analysis_trend()` | 추이/경향 데이터 |
+| `/api/analytics/raw_data` | GET | `api_analysis_raw_data()` | 원시 데이터 |
+| `/api/analytics/job_ids` | GET | `api_analysis_job_ids()` | Job ID 목록 |
+| `/api/analytics/error_codes` | GET | `api_analysis_error_codes()` | 장애코드 목록 |
+| `/api/analytics/error_code_map` | GET | `api_analysis_error_code_map()` | 장애코드 매핑 |
+| `/api/analytics/dynamic-chart` | GET | `get_dynamic_chart_data()` | 동적 차트 데이터 |
 
-## 권한
-
-- `login_required` - 로그인 필수
-- `check_password_change_required` - 비밀번호 변경 강제
-- `analysis_required` - analysis 권한
-- `data_analysis_required` - data_analysis 권한
+## 파라미터
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| start_date | string | 일부 | 시작 날짜 |
+| end_date | string | 일부 | 종료 날짜 |
+| job_ids | array | 아니오 | Job ID 목록 |
+| x_axis | string | 동적차트 | X축 차원 (date, job_id, status) |
+| y_axis | string | 동적차트 | Y축 측정항목 |
 
 ## 의존성
+- Service: `service/dashboard_service.py`, `service/analysis_service.py`, `service/mst_service.py`
 
-- `service/dashboard_service.py` - 대시보드 서비스
-- `service/mst_service.py` - 마스터 서비스
-- `service/analysis_service.py` - 분석 서비스
-- `service/status_code_service.py` - 상태 코드 서비스
-- `dao/analytics_dao.py` - 분석 DAO
-
-## 관련 문서
-
-- [routes/README.md](README.md) - routes 개요
-- [routes/analysis-routes.md](analysis-routes.md) - 분석 라우트
-- [services/analysis-service.md](../services/analysis-service.md) - 분석 서비스
+## 연관 문서
+- [../services/analysis-service.md](../services/analysis-service.md)
+- [../services/dashboard-service.md](../services/dashboard-service.md)

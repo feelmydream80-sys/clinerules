@@ -1,40 +1,38 @@
-# Mapping Routes (mapping_routes.py)
+# mapping_routes
 
-## 파일 위치
+**문서 위치**: `.clinerules/docs/msys/routes/mapping-routes.md`
 
-`routes/mapping_routes.py` (108줄)
+## 파일
+- `D:\dev\msys\routes\mapping_routes.py` (108줄)
 
 ## 역할
+컬럼 매핑 관리 - 레거시 ↔ 신규 컬럼명 매핑 CRUD
 
-매핑 관리 - Job ID, URL, 아이콘 등 매핑 데이터 관리
+## Blueprint
+```python
+mapping_bp = Blueprint('mapping', __name__, url_prefix='/mapping')
+```
 
-## 주요 엔드포인트
+## 엔드포인트
 
-| 엔드포인트 | 메서드 | 템플릿 | 기능 |
-|------------|--------|--------|------|
-| `/mapping` | GET | mapping_management.html | 매핑 관리 페이지 |
+| 경로 | 메서드 | 함수 | 설명 |
+|------|--------|------|------|
+| `/mapping/` | GET | `index()` | 매핑 관리 페이지 |
+| `/mapping/api/all` | GET | `get_all_mappings()` | 모든 매핑 조회 |
+| `/mapping/api/unmapped` | GET | `get_unmapped_columns()` | 매핑되지 않은 컬럼 |
+| `/mapping/api/add` | POST | `add_mapping()` | 매핑 추가 |
+| `/mapping/api/update` | POST | `update_mapping()` | 매핑 수정 |
+| `/mapping/api/delete/<id>` | DELETE | `delete_mapping()` | 매핑 삭제 |
 
-### REST API
-
-| 엔드포인트 | 메서드 | 기능 |
-|------------|--------|------|
-| `/api/mapping/data` | GET | 매핑 데이터 조회 |
-| `/api/mapping/data` | POST | 매핑 데이터 저장 |
-| `/api/mapping/data` | PUT | 매핑 데이터 수정 |
-| `/api/mapping/data` | DELETE | 매핑 데이터 삭제 |
-| `/api/mapping/icons` | GET | 아이콘 목록 조회 |
-
-## 권한
-
-- `login_required` - 로그인 필수
+## 데코레이터
+- `@login_required`: 로그인 필요
+- `@log_menu_access`: 메뉴 접근 로그 기록
 
 ## 의존성
+- Service: `service/mapping_service.py`
+- DAO: `dao/analytics_dao.py`
 
-- `service/mapping_service.py` - 매핑 서비스
-- `dao/analytics_dao.py` - 분석 DAO
-
-## 관련 문서
-
-- [routes/README.md](README.md) - routes 개요
-- [services/mapping-service.md](../services/mapping-service.md) - 매핑 서비스
-- [templates/screen-domain.md](../templates/screen-domain.md) - 화면-템플릿 매핑
+## 연관 문서
+- [../services/mapping-service.md](../services/mapping-service.md)
+- [../dao/mapping-dao.md](../dao/mapping-dao.md)
+- [../templates/mapping.md](../templates/mapping.md)

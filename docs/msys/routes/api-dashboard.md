@@ -1,36 +1,36 @@
-# Dashboard API (dashboard_api.py)
+# api/dashboard_api
 
-## 파일 위치
+**문서 위치**: `.clinerules/docs/msys/routes/api-dashboard.md`
 
-`routes/api/dashboard_api.py` (128줄)
+## 파일
+- `D:\dev\msys\routes\api\dashboard_api.py` (128줄)
 
 ## 역할
+대시보드 REST API
 
-대시보드 REST API - 요약 데이터, 트렌드, 이벤트 통계
+## Blueprint
+```python
+dashboard_api_bp = Blueprint('dashboard_api', __name__, url_prefix='/api/dashboard')
+```
 
-## 주요 엔드포인트
+## 엔드포인트
 
-| 엔드포인트 | 메서드 | 기능 |
-|------------|--------|------|
-| `/api/dashboard/summary` | GET | 대시보드 요약 데이터 |
-| `/api/dashboard/daily_trend` | GET | 일별 트렌드 데이터 |
-| `/api/dashboard/event_counts` | GET | 이벤트 통계 |
-| `/api/dashboard/con_mst` | GET | 연결 마스터 데이터 |
-| `/api/dashboard/menu` | GET | 메뉴 데이터 |
-| `/api/dashboard/icon_menu` | GET | 아이콘-메뉴 매핑 |
+| 경로 | 메서드 | 함수 | 설명 |
+|------|--------|------|------|
+| `/api/dashboard/summary` | GET | `get_dashboard_summary()` | 대시보드 요약 데이터 |
+| `/api/dashboard/day-stats/<date_str>` | GET | `get_day_stats_api()` | 일별 통계 (deprecated) |
+| `/api/dashboard/min-max-dates` | GET | `get_min_max_dates_api()` | 데이터 최소/최대 날짜 |
+| `/api/dashboard/event-log` | GET | `get_event_log_api()` | 이벤트 로그 |
 
-## 권한
-
-- `login_required` - 로그인 필수
-- `check_password_change_required` - 비밀번호 변경 강제
+## 파라미터
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| start_date | string | 일부 | 시작 날짜 (YYYY-MM-DD) |
+| end_date | string | 일부 | 종료 날짜 (YYYY-MM-DD) |
+| all_data | boolean | 아니오 | 전체 데이터 조회 여부 |
 
 ## 의존성
+- Service: `service/dashboard_service.py`
 
-- `service/dashboard_service.py` - 대시보드 서비스
-- `utils/datetime_utils.py` - 날짜 유틸리티
-
-## 관련 문서
-
-- [routes/README.md](README.md) - routes 개요
-- [routes/ui-dashboard-routes.md](ui-dashboard-routes.md) - 대시보드 UI
-- [services/dashboard-service.md](../services/dashboard-service.md) - 대시보드 서비스
+## 연관 문서
+- [../services/dashboard-service.md](../services/dashboard-service.md)
