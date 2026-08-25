@@ -59,8 +59,15 @@
 | 25 | project-onboarding | `common/core/25-project-onboarding.md` | 활성 |  |
 | 26 | agent-definitions | `common/core/26-agent-definitions.md` | 활성 |  |
 | 27 | document-output-standard | `common/core/27-document-output-standard.md` | 활성 |  |
-| 28 | agent-bootstrap | `common/core/28-agent-bootstrap.md` | 활성 | 에이전트 공통 0단계(실행 절차). 정의 파일 규약은 26 |
+| 28 | agent-bootstrap | `common/core/28-agent-bootstrap.md` | 활성 | 에이전트 공통 0단계(실행 절차). 정의 파일 규약은 26. BOOT-7(대용량 자료 규모 측정) 2026-08-19 추가 — rev-260819-01 |
 | 29 | agent-fit-review | `common/core/29-agent-fit-review.md` | 활성 | 서브에이전트 결과 검증·세션 종료 회고 (2026-07-31 사용자 지시로 신설) |
+| 30 | report-insight-structure | `common/core/30-report-insight-structure.md` | 활성 | 결과 보고의 인사이트 우선 구조·표현 규격(INS-1~18). 10–29 대역 소진으로 예비 대역 30 선점 (2026-08-11 사용자 지시로 신설). INS-12(고지 도달) 2026-08-20 추가, §6 상세는 33 으로 이설. INS-13~18(주장 무결성) 2026-08-24 추가 — 상세는 35 |
+| 31 | administrative-report-format | `common/core/31-administrative-report-format.md` | 활성 | INS 의 행정 서식 변형·예외. **소급 등록** — 파일은 존재했으나 본 대장에 미등재 상태였다(32번 채번 중 guideline-curator 가 발견, 2026-08-19) |
+| 32 | large-material-scan | `common/core/32-large-material-scan.md` | 활성 | 대용량 자료 사전 규모 측정·분할 처리(LMS-1~4). 서브에이전트 0단계 BOOT-7 에서 호출 (2026-08-19 사용자 지시로 신설 — 대용량 자료 stall 사고 재발 방지) |
+| 33 | report-set-split | `common/core/33-report-set-split.md` | 활성 | 보고서 세트 분할 임계·세트 구성(INS-9 상세, 30 §6 에서 이설) + **고지 도달 검사**(INS-12). 30 이 160줄 상한에 도달해 31 과 같은 위성 문서 방식으로 분리 (2026-08-20 사용자 지시로 신설) |
+| 34 | submission-form-canon | `common/core/34-submission-form-canon.md` | 활성 | 사내 제출 서식 정본(FORM-1~7) — 제목·작성자·개조식 위계·표 서식 + 구축 완료 보고 1장 골격 + FP 종합 분석표 7절 골격·표 컬럼. 31 이 80줄 경계라 위성 문서로 분리 (2026-08-21 사용자 지시로 신설 — 실제 제출본 2종에서 추출) |
+| 35 | report-claim-integrity | `common/core/35-report-claim-integrity.md` | 활성 | 보고 주장 무결성(INS-13~18 상세) — 도메인 선행·지표 정의 출처·이관 무결성·절 대표값 일치·표·기호 오독 방지·why-first 대응. 30 이 160줄 상한이라 31·33·34 와 같은 위성 문서 방식으로 분리 (2026-08-24 사용자 지시로 신설) |
+| 36 | report-craft-canon | `common/core/36-report-craft-canon.md` | 활성 | 보고 서술 기법(T-1~T-13)·표 설계 규범(TB-1~TB-14). 30·31·35 의 조항이 전부 「셀 수 있는 것」이어서 형식 전건 통과 문서가 보고서 기본기에서 미달한다는 판정에 따라 신설. 서브에이전트 정의 파일에만 있던 두 기법 체계를 공통 정본으로 승격 (2026-08-25 사용자 지시로 신설 — 31·33·34·35 와 같은 위성 문서 방식) |
 
 ### `common/core/00-core/`
 
