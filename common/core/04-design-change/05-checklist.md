@@ -5,3 +5,7 @@
 - [ ] 기존 페이지와의 일관성 검토 완료
 - [ ] 구체적인 적용 계획 작성 완료
 - [ ] 사용자 확인 및 승인 받음
+- [ ] 요청 범위 외 속성·동작 변경 없음 (있으면 제안·승인 여부 확인)
+- [ ] 시각 검증 수행 (스크린샷 또는 `scrollWidth <= clientWidth` assertion) — `05.testing.md` 참조
+- [ ] JSX 재배치 시 들여쓰기/태그 정합성 확인 (formatter 또는 diff 확인)
+- [ ] `grid`/`flex` 레이아웃의 overflow/겹침 체크 (`min-w-0`/`minmax(0,1fr)`/`[&>*]:min-w-0`)

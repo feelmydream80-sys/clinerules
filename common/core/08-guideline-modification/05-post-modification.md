@@ -20,20 +20,26 @@
 | 2026-04-21 | 00-core.md project-compass 추가 | ✓ 통과 |
 | 2026-04-21 | 10-project-compass 폴로 생성 및 파일 이동 | ✓ 통과 |
 | 2026-04-21 | references 폴로 삭제 | ✓ 통과 |
-| 2026-04-21 | 프로젝트 지침 분석 (routes/modules/services GUIDE) | ✓ 통과 |
-| 2026-04-21 | 프로젝트 나침반 README.md 업데이트 | ✓ 통과 |
-| 2026-04-22 | 성능 분석 SKILL 파일 생성 (11-performance-optimization.md) | ✓ 통과 |
+| 2026-04-21 | project_wordcloud 분석 (routes/modules/services GUIDE) | ✓ 통과 |
+| 2026-04-21 | project_wordcloud README.md 업데이트 | ✓ 통과 |
+| 2026-04-22 | 성능 분석 SKILL 파일 생성 (11-performance-optimization-plan.md) | ✓ 통과 |
 | 2026-04-22 | 영향도 분석 SKILL 파일 생성 (12-impact-analysis-report.md) | ✓ 통과 |
 | 2026-04-22 | 요구사항 명확화 SKILL 파일 생성 (13-requirements-clarification.md) | ✓ 통과 |
 | 2026-04-22 | 00-core.md 분류표/문서 위치표 업데이트 | ✓ 통과 |
 | 2026-04-22 | files/ 폴로 삭제 | ✓ 통과 |
 | 2026-04-22 | 00-core.md에 폴로 명칭/누락된 규칙 문서 링크 추가 | ✓ 통과 |
-| 2026-05-11 | 04-design-change.md: 팝업/모달 텍스트 오버플로우 방지 원칙 추가 | ✓ 통과 |
-| 2026-05-11 | 06-git-rules.md: fix를 비기능 작업으로 재분류 (FP → 시간H) | ✓ 통과 |
-| 2026-05-14 | 06-git-rules.md: 빌드 자동화 규칙 섹션 추가 (pre-commit hook) | ✓ 통과 |
+| 2026-05-11 | 04.design-change.md: 팝업/모달 텍스트 오버플로우 방지 원칙 추가 | ✓ 통과 |
+| 2026-05-11 | 06.git-rules.md: fix를 비기능 작업으로 재분류 (FP → 시간H) | ✓ 통과 |
+| 2026-05-14 | 06.git-rules.md: 빌드 자동화 규칙 섹션 추가 (pre-commit hook, msys.zip) | ✓ 통과 |
 | 2026-06-04 | CLAUDE.md: 작업 시작 전 필수 체크 3단계 블록 추가 (지침 미확인 방지) | ✓ 통과 |
 | 2026-06-19 | Modern Minimal Design System 생성 (8개 파일, ~200라인 이하) | ✓ 통과 |
-| 2026-06-19 | 04-design-change.md: 표준 절차 1단계에 design-system/ 참조 추가 | ✓ 통과 |
+| 2026-06-19 | 04.design-change.md: 표준 절차 1단계에 design-system/ 참조 추가 | ✓ 통과 |
 | 2026-06-19 | layout-and-components.md: 나침반으로 변경 + design-system/ 참조 | ✓ 통과 |
 | 2026-06-19 | 00-core.md: 핵심 규칙 문서 위치표에 Design System 항목 추가 | ✓ 통과 |
-| 2026-07-02 | 03-plan-mode.md: 항목 14 요구사항 원자화 및 답변 대장 추가(원자 질문 표·재확인·작업 후 실측 답 기입) | ✓ 통과 |
+| 2026-07-02 | 03.plan-mode.md: 항목 14 요구사항 원자화 및 답변 대장 추가(원자 질문 표·재확인·작업 후 실측 답 기입) | ✓ 통과 |
+| 2026-08-21 | AGENTS.md: 작업 시작 전 필수 체크 블록 복구 (00-core 나침반 참조, 2026-06-04 유실 복원) | ✓ 통과 |
+| 2026-08-21 | 05.testing.md: UI 시각 검증 의무 섹션 추가 (스크린샷/overflow assertion, 드롭 테이블 사례) | ✓ 통과 |
+| 2026-08-21 | 03-workflow/debugging-lessons.md: 원인 가설 검증·CSS Grid overflow 함정 항목 추가 | ✓ 통과 |
+| 2026-08-21 | 03-workflow/request-analysis.md: 요청 범위 외 변경 금지·모호한 UI 지칭 확인 규칙 추가 | ✓ 통과 |
+| 2026-08-21 | 04-design-change/checklist.md: 시각 검증·들여쓰기 정합성·grid overflow 체크 항목 추가 | ✓ 통과 |
+| 2026-08-21 | adventure-editor.tsx: 사이드바 sticky 복원·drop/bestiary `min-w-0` 보강·들여쓰기 정리 + Playwright 레이아웃 회귀 테스트 | ✓ 통과 |
